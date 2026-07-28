@@ -154,6 +154,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sbody.open{max-height:99999px;opacity:1}
 
 .qc{background:#fff;border-radius:9px;padding:11px 12px;margin-bottom:7px;border:1.5px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:border-color .15s}
+.qc.locked{opacity:.75}
+.ab:disabled{cursor:not-allowed;opacity:.6}
+.nta:disabled{background:#f8fafc;color:#64748b;cursor:not-allowed}
 .qc-collapsed{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;opacity:.88}
 .qc-collapsed:hover{opacity:1;border-color:#cbd5e1}
 .qc-collapsed-text{flex:1;font-size:12.5px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -273,6 +276,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn btn-blue" id="sumbtn" onclick="toggleSum();closeHeaderMenu();" style="display:none">📊 Summary</button>
         <button class="btn btn-green" id="expbtn" onclick="doExport();closeHeaderMenu();" style="display:none">⬇ Excel</button>
         <button class="btn btn-purple" id="emailbtn" onclick="sendAudit();closeHeaderMenu();" style="display:none">✉️ Send Audit</button>
+        <button class="btn" style="background:#1e3a8a;display:none" id="finalizebtn" onclick="requestFinalize();closeHeaderMenu();">✅ Finalize</button>
+        <button class="btn" style="background:#15803d;display:none" id="newauditbtn" onclick="newAudit();closeHeaderMenu();">➕ New Audit</button>
         <button class="btn btn-amber" id="newbtn" onclick="newAudit();closeHeaderMenu();" style="display:none">📁 Switch Audit</button>
       </div>
     </div>
@@ -296,7 +301,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="scard">
     <h2>📁 My Audits <span id="myAuditsCount" style="font-size:11px;color:#94a3b8;font-weight:400"></span></h2>
-    <div class="sub">Up to 5 audits can be in progress at once — resume any of them, or start a new one below.</div>
+    <div class="sub">Up to 15 audits can be in progress at once — resume any of them, or start a new one below.</div>
     <div id="myAuditsList"></div>
   </div>
   <div class="scard">
@@ -356,12 +361,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- AUDIT -->
 <div id="audit-screen">
+  <div id="finalizedBanner" style="display:none;background:#1e3a8a;color:#fff;border-radius:10px;padding:12px 16px;margin:10px auto;max-width:880px;font-size:13px;font-weight:700;text-align:center"></div>
+  <div id="finalizeConfirmBar" style="display:none;max-width:880px;margin:10px auto;background:#fef2f2;border:1.5px solid #dc2626;border-radius:10px;padding:12px 16px">
+    <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:8px">⚠️ Finalize this audit? Answers cannot be edited afterward — an auto-summary will be added to your narrative, still fully editable.</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-slate" onclick="cancelFinalize()">Cancel</button>
+      <button class="btn" style="background:#dc2626" onclick="confirmFinalize()">Yes, Finalize</button>
+    </div>
+  </div>
   <div class="scard" style="max-width:880px;margin:10px auto 0" id="narrativeCard">
     <h2 style="font-size:14px;margin-bottom:6px">📝 VP Narrative / Overall Comments</h2>
     <div class="sub" style="margin-bottom:10px">Overall observations, context, or summary remarks for this audit — included in the Excel export and any email sent.</div>
-    <textarea id="narrativeBox" rows="4" placeholder="e.g. Overall the property is well-maintained. Key concerns are around chemical storage in housekeeping and missing wet floor signage during peak hours…"
+    <textarea id="narrativeBox" rows="8" placeholder="e.g. Overall the property is well-maintained. Key concerns are around chemical storage in housekeeping and missing wet floor signage during peak hours…"
       oninput="syncCurrentSession()"
-      style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;resize:vertical;outline:none;transition:border-color .15s;min-height:90px"
+      style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.5;font-family:inherit;resize:vertical;outline:none;transition:border-color .15s;min-height:180px"
       onfocus="this.style.borderColor='#b91c1c'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
   </div>
   <details id="secpanel" style="max-width:880px;margin:10px auto;background:#fff;border-radius:10px;padding:10px 13px;box-shadow:0 1px 4px rgba(0,0,0,.07)">
@@ -459,6 +472,8 @@ function isQCollapsedByRef(ref){
   return q?isQCollapsed(q):false;
 }
 const photoPolicy='optional'; // photos are always optional for VP audits — kept as a constant so the VP decides consistently, case by case, rather than the app enforcing it
+let finalized=false; // per-session lock state — set true once Finalize is confirmed for the current audit
+let pendingFinalize=false;
 const NA_REASONS=[
   'Resort responsibility, not brand standard',
   'Service not provided by TSC at this location',
@@ -479,11 +494,12 @@ function naReasonOptions(current){
   return opts;
 }
 function setNRPreset(ref,val){
+  if(finalized)return;
   nar[ref]=(val==='__other__')?'':val;
   render();updateProg();syncCurrentSession();
 }
 let selLoc=null, actSec=new Set(CORE), sf='All', stf='All';
-const MAX_SESSIONS=5;
+const MAX_SESSIONS=15;
 let sessions=[]; // up to 5 in-progress audits: {id, locId, locName, region, quarter, completedBy, actSec:[...], ans:{}, notes:{}, nar:{}, photos:{}, narrative, lastModified}
 let currentSessionId=null;
 const openS=new Set(ALLSEC);
@@ -557,7 +573,8 @@ function snapshotWorkingState(){
     locationManager:document.getElementById('locmgr')?.value||'',
     accompaniedBy:document.getElementById('locaccompany')?.value||'',
     auditDate:document.getElementById('locdate')?.value||'',
-    quarter:document.getElementById('locqtr')?.value||''
+    quarter:document.getElementById('locqtr')?.value||'',
+    finalized
   };
 }
 const STORAGE_KEY='tsc_vp_audit_sessions_v1';
@@ -651,6 +668,7 @@ function loadSessionIntoWorkingState(sess){
   Object.keys(notes).forEach(k=>delete notes[k]); Object.assign(notes,sess.notes);
   Object.keys(nar).forEach(k=>delete nar[k]); Object.assign(nar,sess.nar);
   Object.keys(photos).forEach(k=>delete photos[k]); Object.assign(photos,sess.photos);
+  finalized=!!sess.finalized;
 }
 function resumeSession(id){
   const sess=sessions.find(s=>s.id===id);
@@ -838,7 +856,7 @@ function updateStartBtn(){
       btn.textContent='Resume Audit \u2014 '+pct+'% complete \u2192';
     } else if(sessions.length>=MAX_SESSIONS){
       btn.disabled=true;
-      btn.textContent='\u26a0\ufe0f 5 audits in progress \u2014 resume or delete one first';
+      btn.textContent='\u26a0\ufe0f '+MAX_SESSIONS+' audits in progress \u2014 resume or delete one first';
     } else {
       btn.disabled=false;
       btn.textContent='Start Audit \u2014 '+tot+' questions \u2192';
@@ -859,9 +877,10 @@ function startAudit(isResume){
       if(existing.auditDate) document.getElementById('locdate').value=existing.auditDate;
       document.getElementById('locqtr').value=existing.quarter||document.getElementById('locqtr').value;
     } else {
-      if(sessions.length>=MAX_SESSIONS){ alert('You already have 5 audits in progress. Resume or delete one first.'); return; }
+      if(sessions.length>=MAX_SESSIONS){ alert('You already have '+MAX_SESSIONS+' audits in progress. Resume or delete one first.'); return; }
       const id='sess_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
       currentSessionId=id;
+      finalized=false;
       sessions.push({
         id, locId:selLoc.id, locName:selLoc.name, region:selLoc.region,
         quarter:document.getElementById('locqtr').value, completedBy:document.getElementById('locby').value,
@@ -871,14 +890,14 @@ function startAudit(isResume){
         actSec:[...actSec],
         ans:{...ans}, notes:{...notes}, nar:{...nar},
         photos:Object.fromEntries(Object.entries(photos).map(([k,v])=>[k,v.map(p=>({...p}))])),
-        photoPolicy, narrative:'', lastModified:Date.now()
+        photoPolicy, narrative:'', finalized:false, lastModified:Date.now()
       });
       persistSessions();
     }
   }
   document.getElementById('setup-screen').style.display='none';
   document.getElementById('audit-screen').style.display='block';
-  ['pbadge','savebtn','sumbtn','expbtn','emailbtn','newbtn','hloc','progress-wrap'].forEach(id=>{
+  ['pbadge','savebtn','sumbtn','expbtn','emailbtn','finalizebtn','newauditbtn','newbtn','hloc','progress-wrap'].forEach(id=>{
     document.getElementById(id).style.display='';
   });
   document.getElementById('hloctext').innerHTML=
@@ -890,6 +909,8 @@ function startAudit(isResume){
   const sess=sessions.find(s=>s.id===currentSessionId);
   const nb=document.getElementById('narrativeBox');
   if(nb) nb.value=(sess&&sess.narrative)||'';
+  pendingFinalize=false;
+  updateFinalizedUI();
   buildChips();renderSecMgmt();render();
   syncCurrentSession();
 }
@@ -897,7 +918,7 @@ function backToSetup(){
   syncCurrentSession();
   document.getElementById('setup-screen').style.display='';
   document.getElementById('audit-screen').style.display='none';
-  ['pbadge','savebtn','sumbtn','expbtn','emailbtn','newbtn','hloc','progress-wrap'].forEach(id=>{
+  ['pbadge','savebtn','sumbtn','expbtn','emailbtn','finalizebtn','newauditbtn','newbtn','hloc','progress-wrap'].forEach(id=>{
     document.getElementById(id).style.display='none';
   });
   renderMyAudits();
@@ -916,7 +937,7 @@ function newAudit(){
   document.getElementById('lchip').style.display='none';
   document.getElementById('setup-screen').style.display='';
   document.getElementById('audit-screen').style.display='none';
-  ['pbadge','savebtn','sumbtn','expbtn','emailbtn','newbtn','hloc','progress-wrap'].forEach(id=>{
+  ['pbadge','savebtn','sumbtn','expbtn','emailbtn','finalizebtn','newauditbtn','newbtn','hloc','progress-wrap'].forEach(id=>{
     document.getElementById(id).style.display='none';
   });
   updateStartBtn();
@@ -1026,30 +1047,31 @@ function render(){
       const nR=a==='N/A'&&!(nar[q.ref]||'').trim();
       const photoRequired=a&&needsPhotoForAnswer(a);
       const nP=photoRequired&&photoList.length===0;
-      let cls='qc'+((nN||nR||nP)?' warn':a==='YES'?' ayes':a==='NO'?' ano':a==='N/A'?' ana':'');
+      let cls='qc'+((nN||nR||nP)?' warn':a==='YES'?' ayes':a==='NO'?' ano':a==='N/A'?' ana':'')+(finalized?' locked':'');
+      const dis=finalized?' disabled':'';
       let nh='';
       if(a==='NO'){
         nh='<div class="na"><span class="nl '+(nN?'r':'g')+'">'+(nN?'\u26a0\ufe0f Notes required':'\ud83d\udcdd Notes')+'</span>'
-          +'<textarea class="nta'+(nN?' r':'')+'" rows="2" placeholder="Describe the issue or corrective action\u2026" oninput="setN(\''+q.ref+'\',this.value)">'+xH(notes[q.ref]||'')+'</textarea></div>';
+          +'<textarea class="nta'+(nN?' r':'')+'" rows="2" placeholder="Describe the issue or corrective action\u2026" oninput="setN(\''+q.ref+'\',this.value)"'+dis+'>'+xH(notes[q.ref]||'')+'</textarea></div>';
       }
       else if(a==='N/A'){
         const current=nar[q.ref]||'';
         const isPreset=NA_REASONS.includes(current);
         nh='<div class="na"><span class="nl w">'+(nR?'\u26a0\ufe0f Reason required \u2014 why N/A?':'Reason this does not apply')+'</span>'
-          +'<select class="nta" style="margin-bottom:6px" onchange="setNRPreset(\''+q.ref+'\',this.value)">'+naReasonOptions(current)+'</select>'
-          +(!isPreset?'<textarea class="nta'+(nR?' w':'')+'" rows="2" placeholder="Specify reason\u2026" oninput="setNR(\''+q.ref+'\',this.value)">'+xH(current)+'</textarea>':'')
+          +'<select class="nta" style="margin-bottom:6px" onchange="setNRPreset(\''+q.ref+'\',this.value)"'+dis+'>'+naReasonOptions(current)+'</select>'
+          +(!isPreset?'<textarea class="nta'+(nR?' w':'')+'" rows="2" placeholder="Specify reason\u2026" oninput="setNR(\''+q.ref+'\',this.value)"'+dis+'>'+xH(current)+'</textarea>':'')
           +'</div>';
       }
       else if(a==='YES')nh='<div class="na"><span class="nl g">\ud83d\udcdd Optional notes</span>'
-        +'<textarea class="nta" rows="2" placeholder="Add observations\u2026" oninput="setN(\''+q.ref+'\',this.value)">'+xH(notes[q.ref]||'')+'</textarea></div>';
+        +'<textarea class="nta" rows="2" placeholder="Add observations\u2026" oninput="setN(\''+q.ref+'\',this.value)"'+dis+'>'+xH(notes[q.ref]||'')+'</textarea></div>';
 
       if(a){
         nh+='<div class="photo-area">'
           +'<div class="photo-req-label'+(nP?'':' ok')+'">'+(photoRequired?(nP?'\ud83d\udcf7 Photo evidence required':'\u2705 Photo evidence attached'):'\ud83d\udcf7 Photo evidence (optional)')+'</div>'
-          +'<label class="photo-btn'+(nP?' req':'')+'">\ud83d\udcf7 '+(photoList.length?'Add another photo':'Take / Upload Photo')
-          +'<input type="file" accept="image/*" style="display:none" onchange="handlePhoto(\''+q.ref+'\',this.files)"></label>'
+          +(finalized?'':'<label class="photo-btn'+(nP?' req':'')+'">\ud83d\udcf7 '+(photoList.length?'Add another photo':'Take / Upload Photo')
+          +'<input type="file" accept="image/*" style="display:none" onchange="handlePhoto(\''+q.ref+'\',this.files)"></label>')
           +(photoList.length?'<div class="photo-thumbs">'+photoList.map((p,i)=>
-            '<div class="photo-thumb"><img src="'+p.dataUrl+'"><button class="rm" onclick="removePhoto(\''+q.ref+'\','+i+')">\u2715</button></div>'
+            '<div class="photo-thumb"><img src="'+p.dataUrl+'">'+(finalized?'':'<button class="rm" onclick="removePhoto(\''+q.ref+'\','+i+')">\u2715</button>')+'</div>'
           ).join('')+'</div>':'')
           +'</div>';
       }
@@ -1063,9 +1085,9 @@ function render(){
         +'<span style="font-size:10px;color:#94a3b8">'+q.shift+'</span>'
         +'</div><div class="qq"><span class="qnum">#'+q.num+' </span>'+xH(q.question)+'</div></div>'
         +'<div class="qbtns">'
-        +'<button class="ab'+(a==='YES'?' sy':'')+'" onclick="setA(\''+q.ref+'\',\'YES\')">YES</button>'
-        +'<button class="ab'+(a==='NO'?' sn':'')+'" onclick="setA(\''+q.ref+'\',\'NO\')">NO</button>'
-        +'<button class="ab'+(a==='N/A'?' sna':'')+'" onclick="setA(\''+q.ref+'\',\'N/A\')">N/A</button>'
+        +'<button class="ab'+(a==='YES'?' sy':'')+'" onclick="setA(\''+q.ref+'\',\'YES\')"'+dis+'>YES</button>'
+        +'<button class="ab'+(a==='NO'?' sn':'')+'" onclick="setA(\''+q.ref+'\',\'NO\')"'+dis+'>NO</button>'
+        +'<button class="ab'+(a==='N/A'?' sna':'')+'" onclick="setA(\''+q.ref+'\',\'N/A\')"'+dis+'>N/A</button>'
         +'</div></div>'+nh+collapseBtn+'</div>';
     });
     html+='</div>';
@@ -1081,9 +1103,9 @@ function toggleSec(s){openS.has(s)?openS.delete(s):openS.add(s);render();}
 function expandAll(){ALLSEC.forEach(s=>openS.add(s));render();}
 function collapseAll(){openS.clear();render();}
 function xH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function setA(ref,v){ans[ref]===v?delete ans[ref]:ans[ref]=v;delete collapseOverride[ref];render();syncCurrentSession();}
-function setN(ref,v){notes[ref]=v;updateProg();syncCurrentSession();}
-function setNR(ref,v){nar[ref]=v;updateProg();syncCurrentSession();}
+function setA(ref,v){if(finalized)return;ans[ref]===v?delete ans[ref]:ans[ref]=v;delete collapseOverride[ref];render();syncCurrentSession();}
+function setN(ref,v){if(finalized)return;notes[ref]=v;updateProg();syncCurrentSession();}
+function setNR(ref,v){if(finalized)return;nar[ref]=v;updateProg();syncCurrentSession();}
 
 function compressImage(file){
   return new Promise((resolve,reject)=>{
@@ -1125,6 +1147,79 @@ function removePhoto(ref,idx){
   if(photos[ref]){ photos[ref].splice(idx,1); if(!photos[ref].length) delete photos[ref]; }
   render();
   syncCurrentSession();
+}
+
+// ── FINALIZE & LOCK (per-session) + AUTO-NARRATIVE ──
+function generateAutoNarrative(){
+  const qs=activeQs();
+  const yes=qs.filter(q=>ans[q.ref]==='YES').length;
+  const no=qs.filter(q=>ans[q.ref]==='NO').length;
+  const na=qs.filter(q=>ans[q.ref]==='N/A').length;
+  const score=(yes+no)>0?Math.round(yes/(yes+no)*100):0;
+
+  let tier;
+  if(score>=90) tier='Passed \u2014 Excellent';
+  else if(score>=85) tier='Passed \u2014 Satisfactory';
+  else if(score>=80) tier='Passed \u2014 Needs Improvement';
+  else tier='Did Not Pass \u2014 Immediate Attention Required';
+
+  const locName=selLoc?selLoc.name:'this location';
+  const auditDateRaw=document.getElementById('locdate').value;
+  const auditDate=auditDateRaw?new Date(auditDateRaw+'T00:00:00').toLocaleDateString():new Date().toLocaleDateString();
+  const accompany=document.getElementById('locaccompany').value.trim();
+
+  const noItems=qs.filter(q=>ans[q.ref]==='NO');
+  const criticalNo=noItems.filter(q=>q.criticality&&q.criticality.startsWith('\ud83d\udd34')).length;
+
+  let issueLine;
+  if(noItems.length===0){
+    issueLine='No outstanding issues were identified during this visit.';
+  } else if(criticalNo>0){
+    issueLine=criticalNo+' critical item'+(criticalNo===1?'':'s')+' identified requiring immediate attention (see Action Items in the export).';
+  } else {
+    issueLine=noItems.length+' item'+(noItems.length===1?'':'s')+' noted for follow-up, none critical.';
+  }
+
+  return 'Audit completed for '+locName+' on '+auditDate+(accompany?', accompanied by '+accompany+'.':'.')+'\n'
+    +'Compliance Score: '+score+'% \u2014 '+tier+'\n'
+    +issueLine;
+}
+function requestFinalize(){
+  pendingFinalize=true;
+  updateFinalizedUI();
+}
+function cancelFinalize(){
+  pendingFinalize=false;
+  updateFinalizedUI();
+}
+function confirmFinalize(){
+  finalized=true;
+  pendingFinalize=false;
+  const autoSummary=generateAutoNarrative();
+  const nb=document.getElementById('narrativeBox');
+  const existing=(nb.value||'').trim();
+  nb.value=existing?(existing+'\n\n\u2014\u2014\u2014 Auto-Generated Summary \u2014\u2014\u2014\n'+autoSummary):autoSummary;
+  syncCurrentSession();
+  updateFinalizedUI();
+  render();
+}
+function updateFinalizedUI(){
+  const banner=document.getElementById('finalizedBanner');
+  const finalizeBtn=document.getElementById('finalizebtn');
+  const confirmBar=document.getElementById('finalizeConfirmBar');
+  if(!banner||!finalizeBtn)return;
+  if(finalized){
+    banner.style.display='';
+    banner.textContent='\ud83d\udd12 This audit is finalized \u2014 answers are locked. The narrative box stays fully editable.';
+    finalizeBtn.style.display='none';
+  } else {
+    banner.style.display='none';
+    finalizeBtn.style.display='';
+    finalizeBtn.textContent=pendingFinalize?'\u26a0\ufe0f Tap to confirm':'\u2705 Finalize';
+    finalizeBtn.style.background=pendingFinalize?'#dc2626':'#1e3a8a';
+    finalizeBtn.onclick=pendingFinalize?confirmFinalize:requestFinalize;
+  }
+  if(confirmBar) confirmBar.style.display=pendingFinalize?'':'none';
 }
 
 function updateProg(){
@@ -1434,8 +1529,35 @@ function buildWorkbookBlob(){
   }
   const zip=buildZip(files);
   const blob=new Blob([zip],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-  const filename='TSC_VP_Risk_Audit_'+(uid||'Export').replace(/[^a-zA-Z0-9]/g,'_')+'_'+qtr.replace(/\s/g,'_')+'.xlsx';
+  const locNameForFile=selLoc?selLoc.name.replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40):'';
+  const filename='TSC_VP_Risk_Audit_'+(uid||'Export').replace(/[^a-zA-Z0-9]/g,'_')+(locNameForFile?'_'+locNameForFile:'')+'_'+qtr.replace(/\s/g,'_')+'.xlsx';
   return {blob,filename};
+}
+
+// ── FREE UP SPACE (offered right after a successful export or send) ──
+function showFreeSpacePrompt(){
+  if(!currentSessionId)return;
+  const sess=sessions.find(s=>s.id===currentSessionId);
+  if(!sess)return;
+  if(document.getElementById('freeSpaceBanner'))return; // avoid stacking if already showing
+  const banner=document.createElement('div');
+  banner.id='freeSpaceBanner';
+  banner.style.cssText='position:fixed;bottom:50px;left:14px;right:14px;max-width:500px;margin:0 auto;background:#0f172a;color:#fff;border-radius:12px;padding:14px 16px;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+  banner.innerHTML=
+    '<div style="font-size:13px;font-weight:700;margin-bottom:10px">\u2705 Saved to this device \u2014 delete this audit now to free up space?</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="dismissFreeSpacePrompt()" style="flex:1;padding:9px;border-radius:8px;border:1.5px solid #475569;background:transparent;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Keep It</button>'
+    +'<button onclick="deleteFromFreeSpacePrompt(\''+currentSessionId+'\')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-size:12px;font-weight:700;cursor:pointer">\ud83d\uddd1\ufe0f Delete Now</button>'
+    +'</div>';
+  document.body.appendChild(banner);
+}
+function dismissFreeSpacePrompt(){
+  const el=document.getElementById('freeSpaceBanner');
+  if(el) el.remove();
+}
+function deleteFromFreeSpacePrompt(id){
+  confirmDeleteSession(id);
+  dismissFreeSpacePrompt();
 }
 
 function doExport(){
@@ -1446,6 +1568,7 @@ function doExport(){
     a.download=filename;
     document.body.appendChild(a);a.click();document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+    setTimeout(()=>showFreeSpacePrompt(),800);
   }catch(err){
     syncCurrentSession();
     alert('Export failed, but your progress is saved. Try again, or remove a photo if the audit has many attached.\n\n('+err.message+')');
@@ -1557,6 +1680,7 @@ function sendAudit(){
       'subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
     const mailto='mailto:'+encodeURIComponent(toEmails.join(','))+mailtoParams;
     setTimeout(()=>openMailto(mailto),400);
+    setTimeout(()=>showFreeSpacePrompt(),1200);
   }catch(err){
     syncCurrentSession();
     alert('Send failed, but your progress is saved. Try again, or remove a photo if the audit has many attached.\n\n('+err.message+')');
