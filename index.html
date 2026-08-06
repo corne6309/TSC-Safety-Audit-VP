@@ -354,6 +354,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
   </div>
+  <div class="scard">
+    <h2>🎥 Virtual Audit</h2>
+    <div class="sub">For smaller/lower-budget sites where an in-person visit isn't justified — conduct via video call with a reduced question set.</div>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;margin-bottom:10px">
+      <input type="checkbox" id="virtualModeToggle" onchange="virtualMode=this.checked;updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
+      <span style="font-size:13px;font-weight:600">This is a virtual audit (video call)</span>
+    </label>
+    <div style="font-size:12px;color:#64748b;margin-bottom:8px"><span id="virtualCountLabel">54</span> of <span id="virtualTotalLabel">199</span> questions currently included for virtual audits</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-slate" style="flex:1;padding:9px;font-size:12px" onclick="exportQuestionReviewList()">⬇ Export Full List (CSV)</button>
+      <label class="btn btn-slate" style="flex:1;padding:9px;font-size:12px;text-align:center;cursor:pointer">⬆ Import Reviewed List
+        <input type="file" accept=".csv" style="display:none" onchange="importQuestionReviewList(this.files)">
+      </label>
+    </div>
+    <div class="sub" style="margin-top:8px">Export the full 199-question list, mark "Include in Virtual" and "Needs Documentation Upload" for each in Excel, then import it back. Saved on this device and reused for every virtual audit.</div>
+  </div>
   <div class="scard" style="padding:0;overflow:hidden">
     <button class="start-btn" id="startbtn" onclick="startAudit()" disabled>Select a location to begin →</button>
   </div>
@@ -376,6 +392,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       oninput="syncCurrentSession()"
       style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.5;font-family:inherit;resize:vertical;outline:none;transition:border-color .15s;min-height:180px"
       onfocus="this.style.borderColor='#b91c1c'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+  </div>
+  <div class="scard" style="max-width:880px;margin:10px auto 0;display:none" id="docNotesCard">
+    <h2 style="font-size:14px;margin-bottom:6px">📄 Documentation to Review Separately</h2>
+    <div class="sub" style="margin-bottom:10px">Since this is a virtual visit, note any records/documentation to follow up on separately (organize by section as needed) — e.g. "Chemical Safety: review SDS binder. Training: check certification files."</div>
+    <textarea id="docNotesBox" rows="5" placeholder="e.g. Chemical Safety: review SDS binder with manager next week. Training & Docs: request certification files via email."
+      oninput="syncCurrentSession()"
+      style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.5;font-family:inherit;resize:vertical;outline:none;transition:border-color .15s;min-height:110px"
+      onfocus="this.style.borderColor='#0e7490'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
   </div>
   <details id="secpanel" style="max-width:880px;margin:10px auto;background:#fff;border-radius:10px;padding:10px 13px;box-shadow:0 1px 4px rgba(0,0,0,.07)">
     <summary>⚙️ Active Sections <span id="secpanelcount" style="color:#64748b;font-weight:400;font-size:11px"></span></summary>
@@ -452,7 +476,7 @@ const COL = {
   'Public Areas':'#4338ca','Kitchen/Stewarding':'#9d174d','Vehicles':'#92400e','Golf Carts':'#15803d'
 };
 
-const ans={}, notes={}, nar={}, photos={};
+const ans={}, notes={}, nar={}, photos={}, docRequested={};
 const collapseOverride={}; // ref -> true/false, only set once user manually taps to expand/collapse
 function isQCollapsed(q){
   const a=ans[q.ref];
@@ -567,14 +591,17 @@ function snapshotWorkingState(){
     notes:{...notes},
     nar:{...nar},
     photos:Object.fromEntries(Object.entries(photos).map(([k,v])=>[k,v.map(p=>({...p}))])),
+    docRequested:{...docRequested},
     photoPolicy,
     narrative:(document.getElementById('narrativeBox')?.value)||'',
+    docNotes:(document.getElementById('docNotesBox')?.value)||'',
     completedBy:document.getElementById('locby')?.value||'',
     locationManager:document.getElementById('locmgr')?.value||'',
     accompaniedBy:document.getElementById('locaccompany')?.value||'',
     auditDate:document.getElementById('locdate')?.value||'',
     quarter:document.getElementById('locqtr')?.value||'',
-    finalized
+    finalized,
+    virtualMode
   };
 }
 const STORAGE_KEY='tsc_vp_audit_sessions_v1';
@@ -668,7 +695,9 @@ function loadSessionIntoWorkingState(sess){
   Object.keys(notes).forEach(k=>delete notes[k]); Object.assign(notes,sess.notes);
   Object.keys(nar).forEach(k=>delete nar[k]); Object.assign(nar,sess.nar);
   Object.keys(photos).forEach(k=>delete photos[k]); Object.assign(photos,sess.photos);
+  Object.keys(docRequested).forEach(k=>delete docRequested[k]); Object.assign(docRequested,sess.docRequested||{});
   finalized=!!sess.finalized;
+  virtualMode=!!sess.virtualMode;
 }
 function resumeSession(id){
   const sess=sessions.find(s=>s.id===id);
@@ -800,12 +829,16 @@ function pickLoc(i){
     document.getElementById('locmgr').value=existing.locationManager||selLoc.manager||'';
     document.getElementById('locaccompany').value=existing.accompaniedBy||'';
     if(existing.auditDate) document.getElementById('locdate').value=existing.auditDate;
+    virtualMode=!!existing.virtualMode;
+    document.getElementById('virtualModeToggle').checked=virtualMode;
     // working ans/notes/nar/photos are only loaded when Start/Resume is actually clicked
   } else {
     actSec=new Set(CORE);
     OPT.forEach(s=>{if(selLoc.sections[s])actSec.add(s);});
     document.getElementById('locmgr').value=selLoc.manager||'';
     document.getElementById('locaccompany').value='';
+    virtualMode=false;
+    document.getElementById('virtualModeToggle').checked=false;
     // Picking a genuinely new (unsaved) location starts clean — clears any stale
     // working state left over from a previous pick that was never started.
     Object.keys(ans).forEach(k=>delete ans[k]);
@@ -825,6 +858,8 @@ function clearLoc(){
   document.getElementById('ls').focus();
   flocs=[...LOCATIONS];
   actSec=new Set(CORE);
+  virtualMode=false;
+  document.getElementById('virtualModeToggle').checked=false;
   Object.keys(ans).forEach(k=>delete ans[k]);
   Object.keys(notes).forEach(k=>delete notes[k]);
   Object.keys(nar).forEach(k=>delete nar[k]);
@@ -849,7 +884,9 @@ function updateStartBtn(){
   const btn=document.getElementById('startbtn');
   if(selLoc){
     const existing=findSessionForLocation(selLoc.id, selLoc.name);
-    const tot=[...actSec].reduce((s,k)=>s+(SQCOUNT[k]||0),0);
+    const totFull=[...actSec].reduce((s,k)=>s+(SQCOUNT[k]||0),0);
+    const totVirtual=QUESTIONS.filter(q=>actSec.has(q.section)&&virtualIncludedRefs.has(q.ref)).length;
+    const tot=virtualMode?totVirtual:totFull;
     if(existing){
       btn.disabled=false;
       const pct=sessionProgress(existing);
@@ -859,7 +896,7 @@ function updateStartBtn(){
       btn.textContent='\u26a0\ufe0f '+MAX_SESSIONS+' audits in progress \u2014 resume or delete one first';
     } else {
       btn.disabled=false;
-      btn.textContent='Start Audit \u2014 '+tot+' questions \u2192';
+      btn.textContent='Start Audit \u2014 '+tot+' questions'+(virtualMode?' (Virtual)':'')+' \u2192';
     }
   } else {btn.disabled=true;btn.textContent='Select a location to begin \u2192';}
 }
@@ -890,7 +927,7 @@ function startAudit(isResume){
         actSec:[...actSec],
         ans:{...ans}, notes:{...notes}, nar:{...nar},
         photos:Object.fromEntries(Object.entries(photos).map(([k,v])=>[k,v.map(p=>({...p}))])),
-        photoPolicy, narrative:'', finalized:false, lastModified:Date.now()
+        photoPolicy, narrative:'', finalized:false, virtualMode, lastModified:Date.now()
       });
       persistSessions();
     }
@@ -902,6 +939,7 @@ function startAudit(isResume){
   });
   document.getElementById('hloctext').innerHTML=
     '<span style="background:#1e3a8a;color:#bfdbfe;padding:1px 7px;border-radius:4px;font-weight:700;font-size:11px;margin-right:5px">'+xH(selLoc.id)+'</span>'
+    +(virtualMode?'<span style="background:#0e7490;color:#a5f3fc;padding:1px 7px;border-radius:4px;font-weight:700;font-size:11px;margin-right:5px">\ud83c\udfa5 VIRTUAL</span>':'')
     +'<strong style="color:#e2e8f0">'+xH(selLoc.name)+'</strong>'
     +' <span style="color:#64748b">\u00b7 '+xH(selLoc.region)+' \u00b7 '+document.getElementById('locqtr').value+'</span>'
     +(selLoc.rvp?'<div style="margin-top:2px;font-size:11px;color:#93c5fd">Regional VP: <strong style="color:#dbeafe">'+xH(selLoc.rvp)+'</strong></div>':'');
@@ -909,6 +947,9 @@ function startAudit(isResume){
   const sess=sessions.find(s=>s.id===currentSessionId);
   const nb=document.getElementById('narrativeBox');
   if(nb) nb.value=(sess&&sess.narrative)||'';
+  const dnb=document.getElementById('docNotesBox');
+  if(dnb) dnb.value=(sess&&sess.docNotes)||'';
+  document.getElementById('docNotesCard').style.display=virtualMode?'':'none';
   pendingFinalize=false;
   updateFinalizedUI();
   buildChips();renderSecMgmt();render();
@@ -929,10 +970,14 @@ function newAudit(){
   syncCurrentSession();
   currentSessionId=null;
   selLoc=null;
+  finalized=false;
+  virtualMode=false;
+  document.getElementById('virtualModeToggle').checked=false;
   Object.keys(ans).forEach(k=>delete ans[k]);
   Object.keys(notes).forEach(k=>delete notes[k]);
   Object.keys(nar).forEach(k=>delete nar[k]);
   Object.keys(photos).forEach(k=>delete photos[k]);
+  Object.keys(docRequested).forEach(k=>delete docRequested[k]);
   sf='All';stf='All';inSum=false;
   document.getElementById('lchip').style.display='none';
   document.getElementById('setup-screen').style.display='';
@@ -978,7 +1023,117 @@ function buildChips(){
 function setSF(v){sf=v;buildChips();render();}
 function setSTF(v){stf=v;buildChips();render();}
 
-function activeQs(){return QUESTIONS.filter(q=>actSec.has(q.section));}
+let virtualMode=false; // when true, this audit is a remote/video-call visit — restricted to a customizable question set
+const VIRTUAL_INCLUDED_KEY='tsc_vp_audit_virtual_included_v2';
+const DOC_REQUIRED_KEY='tsc_vp_audit_doc_required_v1';
+const ALL_CRITICAL_REFS=QUESTIONS.filter(q=>q.criticality&&q.criticality.startsWith('\ud83d\udd34')).map(q=>q.ref);
+// Built-in defaults from Corné's reviewed question list — used on any device until locally customized via Export/Import
+const DEFAULT_VIRTUAL_INCLUDED=["GS-01","GS-02","GS-03","GS-04","GS-05","GS-08","GS-09","GS-11","CS-01","CS-02","CS-05","CS-09","CS-12","CS-14","EP-01","EP-07","EP-09","TD-01","TD-02","TD-04","TD-05","TD-08","VH-01","VH-02","VH-04","VH-06","VH-15","VH-19","HK-04","HK-15","HK-16","HK-21","PA-01","PA-03","PA-10","PA-11","KS-01","KS-03","KS-05","KS-08","KS-18","KS-19","KS-20","EV-03","EV-04","EV-06","EV-07","EV-10","EV-23","GC-01","GC-02","GC-04","GC-06","GC-18"];
+const DEFAULT_DOC_REQUIRED=["CS-09","EP-01","TD-02","TD-04","TD-05","TD-08","VH-01","VH-04","VH-06","GC-01","GC-02","GC-18"];
+let virtualIncludedRefs=new Set(DEFAULT_VIRTUAL_INCLUDED); // which refs count as "in scope" for a virtual audit — fully customizable via CSV review
+let docRequiredRefs=new Set(DEFAULT_DOC_REQUIRED); // refs flagged as needing documentation uploaded to the shared drive during a virtual visit
+function loadVirtualSettings(){
+  try{
+    const raw=localStorage.getItem(VIRTUAL_INCLUDED_KEY);
+    virtualIncludedRefs=raw?new Set(JSON.parse(raw)):new Set(DEFAULT_VIRTUAL_INCLUDED);
+  }catch(err){ virtualIncludedRefs=new Set(DEFAULT_VIRTUAL_INCLUDED); }
+  try{
+    const raw2=localStorage.getItem(DOC_REQUIRED_KEY);
+    docRequiredRefs=raw2?new Set(JSON.parse(raw2)):new Set(DEFAULT_DOC_REQUIRED);
+  }catch(err){ docRequiredRefs=new Set(DEFAULT_DOC_REQUIRED); }
+  updateVirtualCountLabel();
+}
+function saveVirtualSettings(){
+  try{ localStorage.setItem(VIRTUAL_INCLUDED_KEY, JSON.stringify([...virtualIncludedRefs])); }catch(err){}
+  try{ localStorage.setItem(DOC_REQUIRED_KEY, JSON.stringify([...docRequiredRefs])); }catch(err){}
+  updateVirtualCountLabel();
+}
+function updateVirtualCountLabel(){
+  const el=document.getElementById('virtualCountLabel');
+  if(el) el.textContent=virtualIncludedRefs.size;
+  const el2=document.getElementById('virtualTotalLabel');
+  if(el2) el2.textContent=QUESTIONS.length;
+}
+function activeQs(){
+  const bySec=QUESTIONS.filter(q=>actSec.has(q.section));
+  return virtualMode?bySec.filter(q=>virtualIncludedRefs.has(q.ref)):bySec;
+}
+function csvEsc(v){ // CSV field escaping
+  const s=String(v==null?'':v);
+  return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+}
+function exportQuestionReviewList(){
+  const rows=[['Ref ID','Section','Question','Criticality','Include in Virtual (Y/N)','Needs Documentation Upload (Y/N)']];
+  QUESTIONS.forEach(q=>{
+    rows.push([
+      q.ref, q.section, q.question, q.criticality,
+      virtualIncludedRefs.has(q.ref)?'Y':'N',
+      docRequiredRefs.has(q.ref)?'Y':'N'
+    ]);
+  });
+  const csv=rows.map(r=>r.map(csvEsc).join(',')).join('\r\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='TSC_VP_Audit_Question_Review.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+  alert('Downloaded. Open in Excel, mark the last two columns with Y/N for each question, save, then use "Import Reviewed List" to apply your choices.');
+}
+function parseCSVLine(line){
+  const out=[]; let cur=''; let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(inQ){
+      if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else inQ=false; }
+      else cur+=c;
+    } else {
+      if(c==='"') inQ=true;
+      else if(c===','){ out.push(cur); cur=''; }
+      else cur+=c;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+function importQuestionReviewList(fileList){
+  if(!fileList||!fileList.length)return;
+  const file=fileList[0];
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      let text=e.target.result;
+      if(text.charCodeAt(0)===0xFEFF) text=text.slice(1); // strip BOM if present
+      const lines=text.split(/\r?\n/).filter(l=>l.trim().length);
+      if(lines.length<2){ alert('That file does not look like a valid review list.'); return; }
+      const header=parseCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
+      const refIdx=header.findIndex(h=>h.startsWith('ref'));
+      const virtIdx=header.findIndex(h=>h.includes('virtual'));
+      const docIdx=header.findIndex(h=>h.includes('documentation'));
+      if(refIdx===-1||virtIdx===-1||docIdx===-1){ alert('Could not find the expected columns (Ref ID, Include in Virtual, Needs Documentation). Please use the exported file as your starting template.'); return; }
+      const newIncluded=new Set();
+      const newDocRequired=new Set();
+      let matched=0;
+      for(let i=1;i<lines.length;i++){
+        const cols=parseCSVLine(lines[i]);
+        const ref=(cols[refIdx]||'').trim();
+        if(!ref)continue;
+        if(!QUESTIONS.some(q=>q.ref===ref))continue; // skip unrecognized refs defensively
+        matched++;
+        if((cols[virtIdx]||'').trim().toUpperCase().startsWith('Y')) newIncluded.add(ref);
+        if((cols[docIdx]||'').trim().toUpperCase().startsWith('Y')) newDocRequired.add(ref);
+      }
+      if(matched===0){ alert('No recognizable question rows found — please use the exported file as your starting template and only edit the Y/N columns.'); return; }
+      virtualIncludedRefs=newIncluded;
+      docRequiredRefs=newDocRequired;
+      saveVirtualSettings();
+      alert('Applied: '+newIncluded.size+' questions included for virtual audits, '+newDocRequired.size+' flagged for documentation upload.');
+    }catch(err){
+      alert('Could not read that file: '+err.message);
+    }
+  };
+  reader.readAsText(file);
+}
 function filteredQs(){
   const s=document.getElementById('si').value.toLowerCase();
   return activeQs().filter(q=>{
@@ -1077,6 +1232,12 @@ function render(){
       }
 
       const collapseBtn=a?'<button class="qc-collapse-btn" onclick="toggleQCollapse(\''+q.ref+'\')">\u25b4 Collapse</button>':'';
+      const docBanner=(virtualMode&&docRequiredRefs.has(q.ref))?
+        '<div style="margin-top:8px;background:#ecfeff;border:1.5px solid #06b6d4;border-radius:8px;padding:9px 11px;display:flex;align-items:center;gap:8px">'
+        +'<span style="font-size:12px;color:#155e75;flex:1"><strong>\ud83d\udce4 Documentation needed</strong> \u2014 ask manager to upload to SharePoint</span>'
+        +'<label style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#0e7490;cursor:pointer;white-space:nowrap">'
+        +'<input type="checkbox" '+(docRequested[q.ref]?'checked':'')+' onchange="setDocRequested(\''+q.ref+'\',this.checked)" style="width:15px;height:15px;cursor:pointer">Requested'
+        +'</label></div>':'';
 
       html+='<div class="'+cls+'"><div class="qtop">'
         +'<div class="qbody"><div class="qmeta">'
@@ -1088,7 +1249,7 @@ function render(){
         +'<button class="ab'+(a==='YES'?' sy':'')+'" onclick="setA(\''+q.ref+'\',\'YES\')"'+dis+'>YES</button>'
         +'<button class="ab'+(a==='NO'?' sn':'')+'" onclick="setA(\''+q.ref+'\',\'NO\')"'+dis+'>NO</button>'
         +'<button class="ab'+(a==='N/A'?' sna':'')+'" onclick="setA(\''+q.ref+'\',\'N/A\')"'+dis+'>N/A</button>'
-        +'</div></div>'+nh+collapseBtn+'</div>';
+        +'</div></div>'+docBanner+nh+collapseBtn+'</div>';
     });
     html+='</div>';
   });
@@ -1148,6 +1309,10 @@ function removePhoto(ref,idx){
   render();
   syncCurrentSession();
 }
+function setDocRequested(ref,checked){
+  docRequested[ref]=checked;
+  syncCurrentSession();
+}
 
 // ── FINALIZE & LOCK (per-session) + AUTO-NARRATIVE ──
 function generateAutoNarrative(){
@@ -1180,7 +1345,7 @@ function generateAutoNarrative(){
     issueLine=noItems.length+' item'+(noItems.length===1?'':'s')+' noted for follow-up, none critical.';
   }
 
-  return 'Audit completed for '+locName+' on '+auditDate+(accompany?', accompanied by '+accompany+'.':'.')+'\n'
+  return 'Audit completed for '+locName+' on '+auditDate+(accompany?', accompanied by '+accompany+'.':'.')+(virtualMode?' (Conducted virtually via video call.)':'')+'\n'
     +'Compliance Score: '+score+'% \u2014 '+tier+'\n'
     +issueLine;
 }
@@ -1470,9 +1635,10 @@ function buildWorkbookBlob(){
   const snames=['Safety Audit','Action Plan','NA Exclusions','Summary'];
 
   const narrative=(document.getElementById('narrativeBox').value||'').trim();
-  const HEADER_ROWS=9; // rows 0-8 are title/meta/accompany-rvp/narrative/blank/column-header, data starts at row index 9
+  const docNotes=(document.getElementById('docNotesBox')?.value||'').trim();
   const photoPolicyLabel=photoPolicy==='all'?'Required for every answered question':photoPolicy==='optional'?'Optional throughout':'Required for NO findings only';
-  const s1=[['VP OF RISK & SAFETY — SAFETY AUDIT'],['Location ID:',uid,'Location:',loc,'Region:',region,'State:',state],['Quarter:',qtr,'Completed By:',by,'Location Manager:',mgr,'Date of Audit:',auditDate],['Regional VP:',rvpName,'Accompanied By:',accompany||'(not entered)'],['Active Sections:',[...actSec].join(', ')],['Photo Evidence Policy:',photoPolicyLabel],['VP Narrative:',narrative||'(none entered)'],[],['#','Ref ID','Section','Audit Question','Criticality','Shift','Answer','Notes','N/A Reason','Photos'],...qs.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,q.shift,ans[q.ref]||'',notes[q.ref]||'',nar[q.ref]||''])];
+  const HEADER_ROWS=11; // rows 0-10 are title/meta/accompany-rvp/audit-type/active-sections/photo-policy/narrative/doc-notes/blank/column-header, data starts at row index 11
+  const s1=[['VP OF RISK & SAFETY — SAFETY AUDIT'],['Location ID:',uid,'Location:',loc,'Region:',region,'State:',state],['Quarter:',qtr,'Completed By:',by,'Location Manager:',mgr,'Date of Audit:',auditDate],['Regional VP:',rvpName,'Accompanied By:',accompany||'(not entered)'],['Audit Type:',virtualMode?'\ud83c\udfa5 Virtual (Video Call)':'On-Site (In-Person)'],['Active Sections:',[...actSec].join(', ')],['Photo Evidence Policy:',photoPolicyLabel],['VP Narrative:',narrative||'(none entered)'],['Documentation to Review Separately:',docNotes||'(none entered)'],[],['#','Ref ID','Section','Audit Question','Criticality','Shift','Answer','Notes','N/A Reason','Photos'],...qs.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,q.shift,ans[q.ref]||'',notes[q.ref]||'',nar[q.ref]||''])];
 
   // Mark rows that will contain photos so shXml gives them extra height
   const photoAnchors=[]; // {fromCol,fromRow,toCol,toRow,rId,picId,name}
@@ -1496,7 +1662,9 @@ function buildWorkbookBlob(){
   const hasPhotos=photoAnchors.length>0;
 
   const noItems=qs.filter(q=>ans[q.ref]==='NO');
-  const s2=[['VP OF RISK & SAFETY \u2014 ACTION PLAN'],['Location:',loc,'Region:',region,'Quarter:',qtr],[],['#','Ref ID','Section','Issue / Question','Criticality','Notes / Corrective Action','Target Date','Completed By'],...noItems.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,notes[q.ref]||'','',''])];
+  const docItemsExport=virtualMode?qs.filter(q=>docRequiredRefs.has(q.ref)):[];
+  const s2=[['VP OF RISK & SAFETY \u2014 ACTION PLAN'],['Location:',loc,'Region:',region,'Quarter:',qtr],[],['#','Ref ID','Section','Issue / Question','Criticality','Notes / Corrective Action','Target Date','Completed By'],...noItems.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,notes[q.ref]||'','','']),
+    ...(docItemsExport.length?[[],['DOCUMENTATION REQUESTS (Virtual Audit)'],['#','Ref ID','Section','Item','Criticality','Requested?'],...docItemsExport.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,docRequested[q.ref]?'Yes':'No'])]:[])];
   const naItems=qs.filter(q=>ans[q.ref]==='N/A');
   const s3=[['VP OF RISK & SAFETY \u2014 N/A EXCLUSIONS'],['Location:',loc,'Quarter:',qtr],[],['#','Ref ID','Section','Question','Criticality','Reason Not Applicable'],...naItems.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,nar[q.ref]||''])];
   const s4=[['VP OF RISK & SAFETY \u2014 SUMMARY SCORECARD'],['Location ID:',uid,'Location:',loc],['Region:',region,'State:',state,'Quarter:',qtr,'Completed By:',by,'Location Manager:',mgr],['Date of Audit:',auditDate,'Regional VP:',rvpName,'Accompanied By:',accompany||'(not entered)'],[],['','Total','YES','NO','N/A','Unanswered','Score %'],['OVERALL',qs.length,yes,no,na,qs.length-yes-no-na,score],[],['BY SECTION'],...ALLSEC.filter(s=>actSec.has(s)).map(sec=>{const sq=qs.filter(q=>q.section===sec);const sy=sq.filter(q=>ans[q.ref]==='YES').length,sn=sq.filter(q=>ans[q.ref]==='NO').length,sna=sq.filter(q=>ans[q.ref]==='N/A').length;return[sec,sq.length,sy,sn,sna,sq.length-sy-sn-sna,(sy+sn)>0?Math.round(sy/(sy+sn)*100)+'%':'N/A'];})];
@@ -1530,7 +1698,7 @@ function buildWorkbookBlob(){
   const zip=buildZip(files);
   const blob=new Blob([zip],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const locNameForFile=selLoc?selLoc.name.replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40):'';
-  const filename='TSC_VP_Risk_Audit_'+(uid||'Export').replace(/[^a-zA-Z0-9]/g,'_')+(locNameForFile?'_'+locNameForFile:'')+'_'+qtr.replace(/\s/g,'_')+'.xlsx';
+  const filename='TSC_VP_Risk_Audit_'+(uid||'Export').replace(/[^a-zA-Z0-9]/g,'_')+(locNameForFile?'_'+locNameForFile:'')+(virtualMode?'_VIRTUAL':'')+'_'+qtr.replace(/\s/g,'_')+'.xlsx';
   return {blob,filename};
 }
 
@@ -1625,6 +1793,7 @@ function buildNotifyMessage(){
   const locName=selLoc?selLoc.name:'(no location selected)';
   const locId=selLoc?selLoc.id:'';
   const narrative=(document.getElementById('narrativeBox')?.value||'').trim();
+  const docNotes=(document.getElementById('docNotesBox')?.value||'').trim();
 
   const noItems=qs.filter(q=>ans[q.ref]==='NO').sort((a2,b2)=>{
     const r=c=>c&&c.startsWith('\ud83d\udd34')?0:c&&c.startsWith('\ud83d\udfe0')?1:2;
@@ -1637,9 +1806,18 @@ function buildNotifyMessage(){
     ).join('\n');
   }
 
-  const subject='VP of Risk & Safety Audit \u2014 '+locName+' ('+qtr+')';
+  const docItems=qs.filter(q=>docRequiredRefs.has(q.ref));
+  let docRequestList='';
+  if(virtualMode && docItems.length){
+    docRequestList='\n\nDocumentation Requests ('+docItems.length+'):\n'+docItems.map(q=>
+      '\u2022 ['+q.ref+'] '+q.question+' \u2014 '+(docRequested[q.ref]?'Requested':'Not yet requested')
+    ).join('\n');
+  }
+
+  const subject='VP of Risk & Safety Audit \u2014 '+locName+' ('+qtr+')'+(virtualMode?' [VIRTUAL]':'');
   const body=
 'VP Risk Audit completed for '+locName+'.\n\n'+
+(virtualMode?'Audit Type: \ud83c\udfa5 Virtual (Video Call)\n':'')+
 'Date of Audit: '+auditDate+'\n'+
 'Quarter: '+qtr+'\n'+
 'Completed By: '+by+'\n'+
@@ -1649,7 +1827,9 @@ function buildNotifyMessage(){
 'Compliance Score: '+score+'%\n'+
 'YES: '+yes+'   NO: '+no+'   N/A: '+na+
 (narrative?'\n\nVP Comments:\n'+narrative:'')+
+(docNotes?'\n\nDocumentation to Review Separately:\n'+docNotes:'')+
 actionList+
+docRequestList+
 '\n\n\u2014\u2014\u2014\nThe completed Excel workbook has been downloaded to this device \u2014 please attach it to this email before sending.';
 
   return {subject,body};
@@ -1691,6 +1871,7 @@ function sendAudit(){
 checkStorageHealthOnLoad();
 loadPersistedSessions();
 loadSvpCcEmail();
+loadVirtualSettings();
 renderSetup();
 renderMyAudits();
 (function initDate(){
