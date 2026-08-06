@@ -361,7 +361,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <input type="checkbox" id="virtualModeToggle" onchange="virtualMode=this.checked;updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
       <span style="font-size:13px;font-weight:600">This is a virtual audit (video call)</span>
     </label>
-    <div style="font-size:12px;color:#64748b;margin-bottom:8px"><span id="virtualCountLabel">54</span> of <span id="virtualTotalLabel">199</span> questions currently included for virtual audits</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:8px">Virtual template: <span id="virtualCountLabel">54</span> of <span id="virtualTotalLabel">199</span> total questions selected (across all sections) — the number on the Start button below reflects only what applies to the location you've picked</div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-slate" style="flex:1;padding:9px;font-size:12px" onclick="exportQuestionReviewList()">⬇ Export Full List (CSV)</button>
       <label class="btn btn-slate" style="flex:1;padding:9px;font-size:12px;text-align:center;cursor:pointer">⬆ Import Reviewed List
@@ -896,7 +896,7 @@ function updateStartBtn(){
       btn.textContent='\u26a0\ufe0f '+MAX_SESSIONS+' audits in progress \u2014 resume or delete one first';
     } else {
       btn.disabled=false;
-      btn.textContent='Start Audit \u2014 '+tot+' questions'+(virtualMode?' (Virtual)':'')+' \u2192';
+      btn.textContent='Start Audit \u2014 '+tot+' questions'+(virtualMode?' for this location (Virtual)':'')+' \u2192';
     }
   } else {btn.disabled=true;btn.textContent='Select a location to begin \u2192';}
 }
