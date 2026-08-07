@@ -1223,7 +1223,8 @@ function render(){
       if(a){
         nh+='<div class="photo-area">'
           +'<div class="photo-req-label'+(nP?'':' ok')+'">'+(photoRequired?(nP?'\ud83d\udcf7 Photo evidence required':'\u2705 Photo evidence attached'):'\ud83d\udcf7 Photo evidence (optional)')+'</div>'
-          +(finalized?'':'<label class="photo-btn'+(nP?' req':'')+'">\ud83d\udcf7 '+(photoList.length?'Add another photo':'Take / Upload Photo')
+          +(virtualMode&&!photoList.length?'<div style="font-size:11px;color:#0e7490;margin-bottom:5px">\ud83d\udca1 On a video call? Screenshot the call or ask the manager to text/AirDrop you a photo, then choose <strong>Photo Library</strong> below \u2014 don\u2019t use your own camera.</div>':'')
+          +(finalized?'':'<label class="photo-btn'+(nP?' req':'')+'">\ud83d\udcf7 '+(photoList.length?'Add another photo':(virtualMode?'Upload Photo (from Library)':'Take / Upload Photo'))
           +'<input type="file" accept="image/*" style="display:none" onchange="handlePhoto(\''+q.ref+'\',this.files)"></label>')
           +(photoList.length?'<div class="photo-thumbs">'+photoList.map((p,i)=>
             '<div class="photo-thumb"><img src="'+p.dataUrl+'">'+(finalized?'':'<button class="rm" onclick="removePhoto(\''+q.ref+'\','+i+')">\u2715</button>')+'</div>'
