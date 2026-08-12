@@ -378,6 +378,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- AUDIT -->
 <div id="audit-screen">
   <div id="finalizedBanner" style="display:none;background:#1e3a8a;color:#fff;border-radius:10px;padding:12px 16px;margin:10px auto;max-width:880px;font-size:13px;font-weight:700;text-align:center"></div>
+  <div style="max-width:880px;margin:0 auto 10px;text-align:center">
+    <button id="unlockbtn" style="display:none;background:#64748b;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer">🔓 Unlock to Fix a Mistake</button>
+  </div>
+  <div id="unlockConfirmBar" style="display:none;max-width:880px;margin:0 auto 10px;background:#fef9e7;border:1.5px solid #d97706;border-radius:10px;padding:12px 16px">
+    <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px">⚠️ Unlock this audit to fix a mistake? Answers become editable again — remember to tap Finalize when you're done, so the auto-summary reflects your correction.</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-slate" onclick="cancelUnlock()">Cancel</button>
+      <button class="btn" style="background:#d97706" onclick="confirmUnlock()">Yes, Unlock</button>
+    </div>
+  </div>
   <div id="finalizeConfirmBar" style="display:none;max-width:880px;margin:10px auto;background:#fef2f2;border:1.5px solid #dc2626;border-radius:10px;padding:12px 16px">
     <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:8px">⚠️ Finalize this audit? Answers cannot be edited afterward — an auto-summary will be added to your narrative, still fully editable.</div>
     <div style="display:flex;gap:8px">
@@ -1350,6 +1360,7 @@ function generateAutoNarrative(){
     +'Compliance Score: '+score+'% \u2014 '+tier+'\n'
     +issueLine;
 }
+const AUTO_SUMMARY_MARKER='\u2014\u2014\u2014 Auto-Generated Summary \u2014\u2014\u2014';
 function requestFinalize(){
   pendingFinalize=true;
   updateFinalizedUI();
@@ -1363,8 +1374,30 @@ function confirmFinalize(){
   pendingFinalize=false;
   const autoSummary=generateAutoNarrative();
   const nb=document.getElementById('narrativeBox');
-  const existing=(nb.value||'').trim();
-  nb.value=existing?(existing+'\n\n\u2014\u2014\u2014 Auto-Generated Summary \u2014\u2014\u2014\n'+autoSummary):autoSummary;
+  const existingFull=(nb.value||'').trim();
+  // If re-finalizing after an unlock/fix, replace the old auto-summary rather than
+  // stacking a second copy below it — keep whatever the VP wrote themselves before it.
+  // The marker is always included before the auto-summary (even the very first time,
+  // with no manual text yet) so this detection works correctly on every future re-finalize.
+  const markerIdx=existingFull.indexOf(AUTO_SUMMARY_MARKER);
+  const manualPart=markerIdx>=0?existingFull.slice(0,markerIdx).trim():existingFull;
+  nb.value=(manualPart?manualPart+'\n\n':'')+AUTO_SUMMARY_MARKER+'\n'+autoSummary;
+  syncCurrentSession();
+  updateFinalizedUI();
+  render();
+}
+let pendingUnlock=false;
+function requestUnlock(){
+  pendingUnlock=true;
+  updateFinalizedUI();
+}
+function cancelUnlock(){
+  pendingUnlock=false;
+  updateFinalizedUI();
+}
+function confirmUnlock(){
+  finalized=false;
+  pendingUnlock=false;
   syncCurrentSession();
   updateFinalizedUI();
   render();
@@ -1373,19 +1406,29 @@ function updateFinalizedUI(){
   const banner=document.getElementById('finalizedBanner');
   const finalizeBtn=document.getElementById('finalizebtn');
   const confirmBar=document.getElementById('finalizeConfirmBar');
+  const unlockBtn=document.getElementById('unlockbtn');
+  const unlockBar=document.getElementById('unlockConfirmBar');
   if(!banner||!finalizeBtn)return;
   if(finalized){
     banner.style.display='';
-    banner.textContent='\ud83d\udd12 This audit is finalized \u2014 answers are locked. The narrative box stays fully editable.';
+    banner.innerHTML='\ud83d\udd12 This audit is finalized \u2014 answers are locked. The narrative box stays fully editable.';
     finalizeBtn.style.display='none';
+    if(unlockBtn){
+      unlockBtn.style.display='';
+      unlockBtn.textContent=pendingUnlock?'\u26a0\ufe0f Tap to confirm unlock':'\ud83d\udd13 Unlock to Fix a Mistake';
+      unlockBtn.style.background=pendingUnlock?'#dc2626':'#64748b';
+      unlockBtn.onclick=pendingUnlock?confirmUnlock:requestUnlock;
+    }
   } else {
     banner.style.display='none';
     finalizeBtn.style.display='';
     finalizeBtn.textContent=pendingFinalize?'\u26a0\ufe0f Tap to confirm':'\u2705 Finalize';
     finalizeBtn.style.background=pendingFinalize?'#dc2626':'#1e3a8a';
     finalizeBtn.onclick=pendingFinalize?confirmFinalize:requestFinalize;
+    if(unlockBtn) unlockBtn.style.display='none';
   }
   if(confirmBar) confirmBar.style.display=pendingFinalize?'':'none';
+  if(unlockBar) unlockBar.style.display=pendingUnlock?'':'none';
 }
 
 function updateProg(){
