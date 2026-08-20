@@ -163,6 +163,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .qc-collapsed-chevron{color:#cbd5e1;font-size:11px;flex-shrink:0}
 .qc-collapse-btn{display:block;margin:10px auto 0;background:none;border:none;color:#94a3b8;font-size:12px;font-weight:700;cursor:pointer;padding:6px 12px}
 .qc-collapse-btn:hover{color:#475569}
+.na-confirm-item{border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.na-confirm-item.flagged{border-color:#f59e0b;background:#fffbeb}
+.na-confirm-meta{font-size:11px;color:#94a3b8;margin-bottom:2px}
+.na-confirm-q{font-size:13px;font-weight:600;color:#0f172a;margin-bottom:4px}
+.na-confirm-reason{font-size:12px;color:#64748b;font-style:italic;margin-bottom:8px}
+.na-confirm-btns{display:flex;gap:8px;margin-bottom:8px}
+.na-confirm-btns button{flex:1;padding:8px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;font-size:12px;font-weight:700;cursor:pointer}
+.na-confirm-btns button.active-yes{background:#dcfce7;border-color:#15803d;color:#15803d}
+.na-confirm-btns button.active-no{background:#fef3c7;border-color:#d97706;color:#92400e}
+.na-goodwill-input{width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;outline:none}
 .qc.warn{border-color:#f97316}
 .qc.ayes{border-left:4px solid #16a34a}
 .qc.ano{border-left:4px solid #dc2626}
@@ -266,6 +276,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
     <div id="header-btns">
+      <span id="netStatusBadge" style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;white-space:nowrap"></span>
+      <span id="gpsStatusBadge" style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;white-space:nowrap;display:none"></span>
       <span class="pbadge" id="pbadge" style="color:#f59e0b;display:none">0/0</span>
       <span id="saveIndicator" style="font-size:11px;font-weight:700;color:#4ade80;opacity:0;transition:opacity .3s;white-space:nowrap">✓ Saved</span>
       <span id="nowarn" class="bwarn" style="display:none"></span>
@@ -358,17 +370,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <h2>🎥 Virtual Audit</h2>
     <div class="sub">For smaller/lower-budget sites where an in-person visit isn't justified — conduct via video call with a reduced question set.</div>
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;margin-bottom:10px">
-      <input type="checkbox" id="virtualModeToggle" onchange="virtualMode=this.checked;updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
+      <input type="checkbox" id="virtualModeToggle" onchange="virtualMode=this.checked;if(virtualMode){spotCheckMode=false;continuityMode=false;document.getElementById('spotCheckModeToggle').checked=false;document.getElementById('continuityModeToggle').checked=false;}updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
       <span style="font-size:13px;font-weight:600">This is a virtual audit (video call)</span>
     </label>
-    <div style="font-size:12px;color:#64748b;margin-bottom:8px">Virtual template: <span id="virtualCountLabel">54</span> of <span id="virtualTotalLabel">199</span> total questions selected (across all sections) — the number on the Start button below reflects only what applies to the location you've picked</div>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;margin-bottom:10px">
+      <input type="checkbox" id="spotCheckModeToggle" onchange="spotCheckMode=this.checked;if(spotCheckMode){virtualMode=false;continuityMode=false;document.getElementById('virtualModeToggle').checked=false;document.getElementById('continuityModeToggle').checked=false;}updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
+      <span style="font-size:13px;font-weight:600">🔍 This is a quick in-person spot-check (not a full audit)</span>
+    </label>
+    <div style="font-size:12px;color:#64748b;margin-bottom:8px">Virtual template: <span id="virtualCountLabel">54</span> of <span id="virtualTotalLabel">199</span> total questions selected (across all sections) — used for both Virtual Audits and Spot-Checks. The number on the Start button below reflects only what applies to the location you've picked</div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-slate" style="flex:1;padding:9px;font-size:12px" onclick="exportQuestionReviewList()">⬇ Export Full List (CSV)</button>
       <label class="btn btn-slate" style="flex:1;padding:9px;font-size:12px;text-align:center;cursor:pointer">⬆ Import Reviewed List
         <input type="file" accept=".csv" style="display:none" onchange="importQuestionReviewList(this.files)">
       </label>
     </div>
-    <div class="sub" style="margin-top:8px">Export the full 199-question list, mark "Include in Virtual" and "Needs Documentation Upload" for each in Excel, then import it back. Saved on this device and reused for every virtual audit.</div>
+    <div class="sub" style="margin-top:8px">Export the full 199-question list, mark "Include in Virtual" and "Needs Documentation Upload" for each in Excel, then import it back. Saved on this device and reused for every virtual audit and spot-check.</div>
+  </div>
+  <div class="scard">
+    <h2>🔗 Regional VP Continuity Check</h2>
+    <div class="sub">Follow-up check based on the Risk VP's own last audit at this location — re-verifies prior findings and samples each section based on its track record. Loads automatically — nothing to import.</div>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;margin-bottom:10px">
+      <input type="checkbox" id="continuityModeToggle" onchange="continuityMode=this.checked;if(continuityMode){virtualMode=false;spotCheckMode=false;document.getElementById('virtualModeToggle').checked=false;document.getElementById('spotCheckModeToggle').checked=false;}updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
+      <span style="font-size:13px;font-weight:600">This is a continuity check (following up on the Risk VP's audit)</span>
+    </label>
+    <div style="font-size:12px;font-weight:600;padding:8px 10px;background:#f0fdfa;border-radius:8px;margin-bottom:10px" id="continuityPacketStatus">Checking for data\u2026</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:12.5px;font-weight:600">Coverage this quarter</span>
+      <span style="font-size:12.5px;font-weight:700;color:#0e7490" id="continuityBaselineLabel">50%</span>
+    </div>
+    <input type="range" id="continuityBaselineSlider" min="10" max="100" step="5" value="50" oninput="saveContinuityBaseline(this.value);document.getElementById('continuityBaselineLabel').textContent=this.value+'%';updateStartBtn();" style="width:100%;margin-bottom:10px">
+    <div class="sub" style="margin-bottom:10px">Set centrally each quarter — adjust here only if you want to check more or less than usual today.</div>
+    <details>
+      <summary style="font-size:11.5px;color:#94a3b8;cursor:pointer">Having trouble? Import a packet file manually</summary>
+      <label class="btn btn-slate" style="width:100%;padding:9px;font-size:12px;text-align:center;cursor:pointer;display:block;margin-top:8px">⬆ Import Continuity Packet
+        <input type="file" accept=".json" style="display:none" onchange="importContinuityPacket(this.files)">
+      </label>
+    </details>
   </div>
   <div class="scard" style="padding:0;overflow:hidden">
     <button class="start-btn" id="startbtn" onclick="startAudit()" disabled>Select a location to begin →</button>
@@ -378,6 +415,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- AUDIT -->
 <div id="audit-screen">
   <div id="finalizedBanner" style="display:none;background:#1e3a8a;color:#fff;border-radius:10px;padding:12px 16px;margin:10px auto;max-width:880px;font-size:13px;font-weight:700;text-align:center"></div>
+  <div id="locationCheckBadge" style="display:none;max-width:880px;margin:0 auto 10px;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;text-align:center"></div>
   <div style="max-width:880px;margin:0 auto 10px;text-align:center">
     <button id="unlockbtn" style="display:none;background:#64748b;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer">🔓 Unlock to Fix a Mistake</button>
   </div>
@@ -410,6 +448,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       oninput="syncCurrentSession()"
       style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.5;font-family:inherit;resize:vertical;outline:none;transition:border-color .15s;min-height:110px"
       onfocus="this.style.borderColor='#0e7490'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+  </div>
+  <div class="scard" style="max-width:880px;margin:10px auto 0;display:none" id="naConfirmCard">
+    <h2 style="font-size:14px;margin-bottom:6px">🔍 Confirm Prior N/A Items</h2>
+    <div class="sub" style="margin-bottom:10px">These were marked Not Applicable at this location during the Risk VP's last audit. Quickly confirm each still holds true — catches scope changes (e.g. a pool added since) separately from compliance. Optional notes here are for client-facing observations, not audit findings.</div>
+    <div id="naConfirmList"></div>
   </div>
   <details id="secpanel" style="max-width:880px;margin:10px auto;background:#fff;border-radius:10px;padding:10px 13px;box-shadow:0 1px 4px rgba(0,0,0,.07)">
     <summary>⚙️ Active Sections <span id="secpanelcount" style="color:#64748b;font-weight:400;font-size:11px"></span></summary>
@@ -507,6 +550,69 @@ function isQCollapsedByRef(ref){
 }
 const photoPolicy='optional'; // photos are always optional for VP audits — kept as a constant so the VP decides consistently, case by case, rather than the app enforcing it
 let finalized=false; // per-session lock state — set true once Finalize is confirmed for the current audit
+let locationCheck=null; // {status, distanceMiles, capturedAt, lat, lng} — soft on-site verification, never blocks the audit
+
+// ── ON-SITE LOCATION VERIFICATION (soft check — records the result, never blocks) ──
+// Only meaningful for On-Site and Spot-Check visits — Virtual is explicitly excluded since
+// there's no expectation of being physically present. GPS can be spoofed or denied and is
+// not a security control — this exists to create an honest record, not to enforce anything.
+function haversineMiles(lat1,lng1,lat2,lng2){
+  const R=3958.8; // Earth radius in miles
+  const toRad=d=>d*Math.PI/180;
+  const dLat=toRad(lat2-lat1), dLng=toRad(lng2-lng1);
+  const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function captureLocationCheck(){
+  if(virtualMode){ locationCheck=null; return; } // not applicable for remote visits
+  if(!selLoc){ locationCheck=null; return; }
+  if(!('geolocation' in navigator)){
+    locationCheck={status:'unavailable', message:'Device does not support location services'};
+    updateLocationCheckUI(); syncCurrentSession();
+    return;
+  }
+  locationCheck={status:'checking', message:'Checking location\u2026'};
+  updateLocationCheckUI();
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      const {latitude,longitude}=pos.coords;
+      if(selLoc.lat!=null && selLoc.lng!=null){
+        const dist=haversineMiles(latitude,longitude,selLoc.lat,selLoc.lng);
+        locationCheck={
+          status: dist<=0.5?'confirmed':'flagged',
+          distanceMiles: Math.round(dist*10)/10,
+          lat:latitude, lng:longitude,
+          capturedAt:new Date().toISOString()
+        };
+      } else {
+        locationCheck={status:'not_configured', lat:latitude, lng:longitude, capturedAt:new Date().toISOString(), message:'GPS captured, but this location has no address on file yet to compare against'};
+      }
+      updateLocationCheckUI(); syncCurrentSession();
+    },
+    err=>{
+      locationCheck={status:'denied', message:'Location permission not granted ('+err.message+')'};
+      updateLocationCheckUI(); syncCurrentSession();
+    },
+    {enableHighAccuracy:true, timeout:10000}
+  );
+}
+function updateLocationCheckUI(){
+  const el=document.getElementById('locationCheckBadge');
+  if(!el)return;
+  if(!locationCheck || virtualMode){ el.style.display='none'; return; }
+  el.style.display='';
+  const map={
+    checking:{bg:'#f1f5f9',color:'#64748b',text:'\u23f3 Checking location\u2026'},
+    confirmed:{bg:'#dcfce7',color:'#15803d',text:'\u2705 Location confirmed ('+locationCheck.distanceMiles+' mi from site)'},
+    flagged:{bg:'#fee2e2',color:'#b91c1c',text:'\u26a0\ufe0f '+locationCheck.distanceMiles+' mi from site \u2014 recorded on the audit'},
+    not_configured:{bg:'#f1f5f9',color:'#64748b',text:'\ud83d\udccd GPS captured (no site address on file yet)'},
+    denied:{bg:'#fef3c7',color:'#92400e',text:'\u26a0\ufe0f Location not shared \u2014 recorded on the audit'},
+    unavailable:{bg:'#f1f5f9',color:'#64748b',text:'\ud83d\udccd Location services unavailable on this device'}
+  };
+  const m=map[locationCheck.status]||map.unavailable;
+  el.style.background=m.bg; el.style.color=m.color; el.textContent=m.text;
+  updateGpsStatusBadge();
+}
 let pendingFinalize=false;
 const NA_REASONS=[
   'Resort responsibility, not brand standard',
@@ -611,7 +717,11 @@ function snapshotWorkingState(){
     auditDate:document.getElementById('locdate')?.value||'',
     quarter:document.getElementById('locqtr')?.value||'',
     finalized,
-    virtualMode
+    virtualMode,
+    spotCheckMode,
+    locationCheck,
+    continuityMode,
+    naConfirmations:{...naConfirmations}
   };
 }
 const STORAGE_KEY='tsc_vp_audit_sessions_v1';
@@ -708,6 +818,9 @@ function loadSessionIntoWorkingState(sess){
   Object.keys(docRequested).forEach(k=>delete docRequested[k]); Object.assign(docRequested,sess.docRequested||{});
   finalized=!!sess.finalized;
   virtualMode=!!sess.virtualMode;
+  spotCheckMode=!!sess.spotCheckMode;
+  continuityMode=!!sess.continuityMode;
+  Object.keys(naConfirmations).forEach(k=>delete naConfirmations[k]); Object.assign(naConfirmations,sess.naConfirmations||{});
 }
 function resumeSession(id){
   const sess=sessions.find(s=>s.id===id);
@@ -840,7 +953,9 @@ function pickLoc(i){
     document.getElementById('locaccompany').value=existing.accompaniedBy||'';
     if(existing.auditDate) document.getElementById('locdate').value=existing.auditDate;
     virtualMode=!!existing.virtualMode;
+    spotCheckMode=!!existing.spotCheckMode;
     document.getElementById('virtualModeToggle').checked=virtualMode;
+    document.getElementById('spotCheckModeToggle').checked=spotCheckMode;
     // working ans/notes/nar/photos are only loaded when Start/Resume is actually clicked
   } else {
     actSec=new Set(CORE);
@@ -848,7 +963,12 @@ function pickLoc(i){
     document.getElementById('locmgr').value=selLoc.manager||'';
     document.getElementById('locaccompany').value='';
     virtualMode=false;
+    spotCheckMode=false;
+    continuityMode=false;
+    locationCheck=null;
     document.getElementById('virtualModeToggle').checked=false;
+    document.getElementById('spotCheckModeToggle').checked=false;
+    document.getElementById('continuityModeToggle').checked=false;
     // Picking a genuinely new (unsaved) location starts clean — clears any stale
     // working state left over from a previous pick that was never started.
     Object.keys(ans).forEach(k=>delete ans[k]);
@@ -869,7 +989,13 @@ function clearLoc(){
   flocs=[...LOCATIONS];
   actSec=new Set(CORE);
   virtualMode=false;
+  spotCheckMode=false;
+  continuityMode=false;
+  naConfirmations={};
+  locationCheck=null;
   document.getElementById('virtualModeToggle').checked=false;
+  document.getElementById('spotCheckModeToggle').checked=false;
+  document.getElementById('continuityModeToggle').checked=false;
   Object.keys(ans).forEach(k=>delete ans[k]);
   Object.keys(notes).forEach(k=>delete notes[k]);
   Object.keys(nar).forEach(k=>delete nar[k]);
@@ -895,8 +1021,10 @@ function updateStartBtn(){
   if(selLoc){
     const existing=findSessionForLocation(selLoc.id, selLoc.name);
     const totFull=[...actSec].reduce((s,k)=>s+(SQCOUNT[k]||0),0);
-    const totVirtual=QUESTIONS.filter(q=>actSec.has(q.section)&&virtualIncludedRefs.has(q.ref)).length;
-    const tot=virtualMode?totVirtual:totFull;
+    const totReduced=QUESTIONS.filter(q=>actSec.has(q.section)&&virtualIncludedRefs.has(q.ref)).length;
+    const totContinuity=continuityMode?continuityIncludedRefs().size:0;
+    const tot=continuityMode?totContinuity:(virtualMode||spotCheckMode)?totReduced:totFull;
+    const modeLabel=virtualMode?' for this location (Virtual)':spotCheckMode?' for this location (Spot-Check)':continuityMode?' for this location (Continuity Check)':'';
     if(existing){
       btn.disabled=false;
       const pct=sessionProgress(existing);
@@ -906,7 +1034,7 @@ function updateStartBtn(){
       btn.textContent='\u26a0\ufe0f '+MAX_SESSIONS+' audits in progress \u2014 resume or delete one first';
     } else {
       btn.disabled=false;
-      btn.textContent='Start Audit \u2014 '+tot+' questions'+(virtualMode?' for this location (Virtual)':'')+' \u2192';
+      btn.textContent='Start Audit \u2014 '+tot+' questions'+modeLabel+' \u2192';
     }
   } else {btn.disabled=true;btn.textContent='Select a location to begin \u2192';}
 }
@@ -937,7 +1065,7 @@ function startAudit(isResume){
         actSec:[...actSec],
         ans:{...ans}, notes:{...notes}, nar:{...nar},
         photos:Object.fromEntries(Object.entries(photos).map(([k,v])=>[k,v.map(p=>({...p}))])),
-        photoPolicy, narrative:'', finalized:false, virtualMode, lastModified:Date.now()
+        photoPolicy, narrative:'', finalized:false, virtualMode, spotCheckMode, locationCheck:null, continuityMode, naConfirmations:{}, lastModified:Date.now()
       });
       persistSessions();
     }
@@ -950,6 +1078,7 @@ function startAudit(isResume){
   document.getElementById('hloctext').innerHTML=
     '<span style="background:#1e3a8a;color:#bfdbfe;padding:1px 7px;border-radius:4px;font-weight:700;font-size:11px;margin-right:5px">'+xH(selLoc.id)+'</span>'
     +(virtualMode?'<span style="background:#0e7490;color:#a5f3fc;padding:1px 7px;border-radius:4px;font-weight:700;font-size:11px;margin-right:5px">\ud83c\udfa5 VIRTUAL</span>':'')
+    +(spotCheckMode?'<span style="background:#7e22ce;color:#f3e8ff;padding:1px 7px;border-radius:4px;font-weight:700;font-size:11px;margin-right:5px">\ud83d\udd0d SPOT-CHECK</span>':'')
     +'<strong style="color:#e2e8f0">'+xH(selLoc.name)+'</strong>'
     +' <span style="color:#64748b">\u00b7 '+xH(selLoc.region)+' \u00b7 '+document.getElementById('locqtr').value+'</span>'
     +(selLoc.rvp?'<div style="margin-top:2px;font-size:11px;color:#93c5fd">Regional VP: <strong style="color:#dbeafe">'+xH(selLoc.rvp)+'</strong></div>':'');
@@ -960,8 +1089,12 @@ function startAudit(isResume){
   const dnb=document.getElementById('docNotesBox');
   if(dnb) dnb.value=(sess&&sess.docNotes)||'';
   document.getElementById('docNotesCard').style.display=virtualMode?'':'none';
+  renderNAConfirmList();
   pendingFinalize=false;
   updateFinalizedUI();
+  locationCheck=(sess&&sess.locationCheck)||null;
+  if(locationCheck){ updateLocationCheckUI(); }
+  else if(!virtualMode){ captureLocationCheck(); }
   buildChips();renderSecMgmt();render();
   syncCurrentSession();
 }
@@ -982,7 +1115,13 @@ function newAudit(){
   selLoc=null;
   finalized=false;
   virtualMode=false;
+  spotCheckMode=false;
+  continuityMode=false;
+  naConfirmations={};
+  locationCheck=null;
   document.getElementById('virtualModeToggle').checked=false;
+  document.getElementById('spotCheckModeToggle').checked=false;
+  document.getElementById('continuityModeToggle').checked=false;
   Object.keys(ans).forEach(k=>delete ans[k]);
   Object.keys(notes).forEach(k=>delete notes[k]);
   Object.keys(nar).forEach(k=>delete nar[k]);
@@ -1034,6 +1173,223 @@ function setSF(v){sf=v;buildChips();render();}
 function setSTF(v){stf=v;buildChips();render();}
 
 let virtualMode=false; // when true, this audit is a remote/video-call visit — restricted to a customizable question set
+let spotCheckMode=false; // when true, this is a quick in-person spot-check visit — same reduced question set as Virtual, but tracked as its own category
+let continuityMode=false; // when true, this is a Regional VP follow-up check based on the Risk VP's own prior audit at this location
+let continuityPacket=null; // imported continuity_packet.json — { generatedAt, locations: { unitId: {...} } }
+let naConfirmations={}; // per-session: ref -> {stillValid: true/false, goodwillNote: string}
+const CONTINUITY_BASELINE_KEY='tsc_vp_audit_continuity_baseline_v1';
+const CONTINUITY_PACKET_KEY='tsc_vp_audit_continuity_packet_v1';
+let continuityBaseline=50; // quarterly baseline % — persisted device setting, adjustable per quarter
+// ── NETWORK STATUS BADGE (all tools show this) ──
+function updateNetStatusBadge(){
+  const el=document.getElementById('netStatusBadge');
+  if(!el)return;
+  if(navigator.onLine){
+    el.textContent='\ud83d\udfe2 Online';
+    el.style.background='#dcfce7'; el.style.color='#15803d';
+  } else {
+    el.textContent='\u26ab Offline';
+    el.style.background='#f1f5f9'; el.style.color='#64748b';
+  }
+}
+function handleBackOnline(){
+  updateNetStatusBadge();
+  // Auto-retry: if a continuity check couldn't fetch its packet while offline, try again now
+  if(continuityMode && !continuityPacket){
+    fetchContinuityPacket();
+  }
+}
+window.addEventListener('online', handleBackOnline);
+window.addEventListener('offline', updateNetStatusBadge);
+
+// ── GPS STATUS BADGE (passive — reflects current permission state, doesn't itself request access) ──
+async function updateGpsStatusBadge(){
+  const el=document.getElementById('gpsStatusBadge');
+  if(!el)return;
+  el.style.display='';
+  if(!('geolocation' in navigator)){
+    el.textContent='\u26ab GPS Unavailable';
+    el.style.background='#f1f5f9'; el.style.color='#64748b';
+    return;
+  }
+  if('permissions' in navigator && navigator.permissions.query){
+    try{
+      const status=await navigator.permissions.query({name:'geolocation'});
+      renderGpsBadgeState(status.state);
+      status.onchange=()=>renderGpsBadgeState(status.state);
+      return;
+    }catch(err){ /* fall through to locationCheck-based fallback below */ }
+  }
+  // Fallback for browsers without the Permissions API — infer from the last actual check, if any
+  if(locationCheck){
+    renderGpsBadgeState(locationCheck.status==='denied'?'denied':'granted');
+  } else {
+    renderGpsBadgeState('prompt');
+  }
+}
+function renderGpsBadgeState(state){
+  const el=document.getElementById('gpsStatusBadge');
+  if(!el)return;
+  if(state==='granted'){
+    el.textContent='\ud83d\udfe2 GPS Allowed'; el.style.background='#dcfce7'; el.style.color='#15803d';
+  } else if(state==='denied'){
+    el.textContent='\ud83d\udd34 GPS Blocked'; el.style.background='#fee2e2'; el.style.color='#b91c1c';
+  } else {
+    el.textContent='\u26aa GPS Not Asked Yet'; el.style.background='#f1f5f9'; el.style.color='#64748b';
+  }
+}
+
+function loadContinuitySettings(){
+  try{
+    const raw=localStorage.getItem(CONTINUITY_BASELINE_KEY);
+    if(raw) continuityBaseline=parseInt(raw,10)||50;
+  }catch(err){}
+  try{
+    const raw2=localStorage.getItem(CONTINUITY_PACKET_KEY);
+    if(raw2) continuityPacket=JSON.parse(raw2);
+  }catch(err){ continuityPacket=null; }
+  const slider=document.getElementById('continuityBaselineSlider');
+  if(slider) slider.value=continuityBaseline;
+  updateContinuityLabel();
+  fetchContinuityPacket(); // try the hosted packet — overrides the above if a fresher one is published
+}
+// Auto-fetch the continuity packet from this same GitHub Pages site, the same way the
+// Leadership Dashboard auto-fetches its data — Regional VPs never need to import anything
+// manually. Falls back silently to whatever's cached locally if this fails (e.g. testing
+// from a local file, or no packet has been published yet).
+async function fetchContinuityPacket(){
+  try{
+    const res=await fetch('continuity_packet.json',{cache:'no-store'});
+    if(!res.ok) return;
+    const data=await res.json();
+    if(!data.locations) return;
+    continuityPacket=data;
+    try{ localStorage.setItem(CONTINUITY_PACKET_KEY, JSON.stringify(data)); }catch(err){}
+    if(data.baselinePct){
+      continuityBaseline=data.baselinePct;
+      try{ localStorage.setItem(CONTINUITY_BASELINE_KEY, String(continuityBaseline)); }catch(err){}
+      const slider=document.getElementById('continuityBaselineSlider');
+      if(slider) slider.value=continuityBaseline;
+    }
+    updateContinuityLabel();
+    if(selLoc) updateStartBtn();
+  }catch(err){
+    // No hosted packet available — fine, this just means using whatever's cached locally (if anything)
+  }
+}
+function saveContinuityBaseline(val){
+  continuityBaseline=Math.max(10,Math.min(100,parseInt(val,10)||50));
+  try{ localStorage.setItem(CONTINUITY_BASELINE_KEY, String(continuityBaseline)); }catch(err){}
+  updateContinuityLabel();
+}
+function importContinuityPacket(fileList){
+  if(!fileList||!fileList.length)return;
+  const file=fileList[0];
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.locations){ alert('That file does not look like a valid continuity packet.'); return; }
+      continuityPacket=data;
+      try{ localStorage.setItem(CONTINUITY_PACKET_KEY, JSON.stringify(data)); }catch(err){}
+      if(data.baselinePct){
+        continuityBaseline=data.baselinePct;
+        try{ localStorage.setItem(CONTINUITY_BASELINE_KEY, String(continuityBaseline)); }catch(err){}
+        const slider=document.getElementById('continuityBaselineSlider');
+        if(slider) slider.value=continuityBaseline;
+      }
+      alert('Continuity packet imported \u2014 covers '+Object.keys(data.locations).length+' location(s), generated '+(data.generatedAtDisplay||'')+'.');
+      updateContinuityLabel();
+    }catch(err){
+      alert('Could not read that file: '+err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+function updateContinuityLabel(){
+  const el=document.getElementById('continuityBaselineLabel');
+  if(el) el.textContent=continuityBaseline+'%';
+  const pel=document.getElementById('continuityPacketStatus');
+  if(pel){
+    if(continuityPacket){
+      pel.textContent='\u2705 Ready \u2014 '+Object.keys(continuityPacket.locations).length+' location(s) available, updated '+(continuityPacket.generatedAtDisplay||'');
+      pel.style.background='#f0fdf4'; pel.style.color='#15803d';
+    } else {
+      pel.textContent='\u26a0\ufe0f No continuity data available yet \u2014 check with the Risk VP';
+      pel.style.background='#fef3c7'; pel.style.color='#92400e';
+    }
+  }
+}
+function continuityDataForLocation(){
+  if(!continuityPacket||!selLoc)return null;
+  return continuityPacket.locations[selLoc.id]||null;
+}
+// Weighted per-section sampling: baseline % adjusted by a multiplier based on that
+// section's historical non-compliance rate (YES/NO only — N/A never factors into this).
+function continuitySectionMultiplier(rate){
+  if(rate==null)return 1.0;
+  if(rate<0.25)return 0.6;
+  if(rate>0.5)return 1.5;
+  return 1.0;
+}
+function continuityIncludedRefs(){
+  const data=continuityDataForLocation();
+  const priorRefs=new Set((data&&data.priorFindings||[]).map(f=>f.ref));
+  const rates=(data&&data.sectionNonComplianceRates)||{};
+  const included=new Set(priorRefs); // prior findings are ALWAYS included, regardless of sampling
+  ALL_SECTIONS_ORDERED_VP.forEach(sec=>{
+    const secQs=QUESTIONS.filter(q=>q.section===sec);
+    if(!secQs.length)return;
+    const mult=continuitySectionMultiplier(rates[sec]);
+    const pct=Math.min(100,Math.round(continuityBaseline*mult));
+    const sampleCount=Math.round(secQs.length*pct/100);
+    // Deterministic sample (not random) so re-opening the same session shows the same set —
+    // prioritizes CRITICAL first, then HIGH, then MEDIUM within the section.
+    const ordered=[...secQs].sort((a,b)=>{
+      const rank=c=>c&&c.startsWith('\ud83d\udd34')?0:c&&c.startsWith('\ud83d\udfe0')?1:2;
+      return rank(a.criticality)-rank(b.criticality);
+    });
+    ordered.slice(0,sampleCount).forEach(q=>included.add(q.ref));
+  });
+  return included;
+}
+const ALL_SECTIONS_ORDERED_VP=['General Safety','Chemical Safety','Emergency Prep','Training & Docs','Housekeeping','EVS','Public Areas','Kitchen/Stewarding','Vehicles','Golf Carts'];
+
+// ── N/A CONFIRMATION (continuity checks only — scope-drift detection, separate from compliance) ──
+function renderNAConfirmList(){
+  const card=document.getElementById('naConfirmCard');
+  const list=document.getElementById('naConfirmList');
+  if(!continuityMode){ card.style.display='none'; return; }
+  const data=continuityDataForLocation();
+  const items=(data&&data.priorNAItems)||[];
+  if(!items.length){ card.style.display='none'; return; }
+  card.style.display='';
+  list.innerHTML=items.map(it=>{
+    const conf=naConfirmations[it.ref]||{};
+    const flagged=conf.stillValid===false;
+    return '<div class="na-confirm-item'+(flagged?' flagged':'')+'">'
+      +'<div class="na-confirm-meta">'+xH(it.ref)+' \u00b7 '+xH(it.section)+'</div>'
+      +'<div class="na-confirm-q">'+xH(it.question)+'</div>'
+      +'<div class="na-confirm-reason">Marked N/A: '+xH(it.reason||'(no reason recorded)')+'</div>'
+      +'<div class="na-confirm-btns">'
+      +'<button class="'+(conf.stillValid===true?'active-yes':'')+'" onclick="setNAConfirmation(\''+it.ref+'\',true)">\u2705 Still accurate</button>'
+      +'<button class="'+(conf.stillValid===false?'active-no':'')+'" onclick="setNAConfirmation(\''+it.ref+'\',false)">\u26a0\ufe0f Situation has changed</button>'
+      +'</div>'
+      +'<input type="text" class="na-goodwill-input" placeholder="Optional general observation (for client goodwill, not a finding)" value="'+xH(conf.goodwillNote||'')+'" oninput="setNAGoodwillNote(\''+it.ref+'\',this.value)">'
+      +'</div>';
+  }).join('');
+}
+function setNAConfirmation(ref,stillValid){
+  if(!naConfirmations[ref]) naConfirmations[ref]={};
+  naConfirmations[ref].stillValid=stillValid;
+  syncCurrentSession();
+  renderNAConfirmList();
+}
+function setNAGoodwillNote(ref,note){
+  if(!naConfirmations[ref]) naConfirmations[ref]={};
+  naConfirmations[ref].goodwillNote=note;
+  syncCurrentSession();
+}
 const VIRTUAL_INCLUDED_KEY='tsc_vp_audit_virtual_included_v2';
 const DOC_REQUIRED_KEY='tsc_vp_audit_doc_required_v1';
 const ALL_CRITICAL_REFS=QUESTIONS.filter(q=>q.criticality&&q.criticality.startsWith('\ud83d\udd34')).map(q=>q.ref);
@@ -1066,7 +1422,11 @@ function updateVirtualCountLabel(){
 }
 function activeQs(){
   const bySec=QUESTIONS.filter(q=>actSec.has(q.section));
-  return virtualMode?bySec.filter(q=>virtualIncludedRefs.has(q.ref)):bySec;
+  if(continuityMode){
+    const included=continuityIncludedRefs();
+    return bySec.filter(q=>included.has(q.ref));
+  }
+  return (virtualMode||spotCheckMode)?bySec.filter(q=>virtualIncludedRefs.has(q.ref)):bySec;
 }
 function csvEsc(v){ // CSV field escaping
   const s=String(v==null?'':v);
@@ -1356,9 +1716,27 @@ function generateAutoNarrative(){
     issueLine=noItems.length+' item'+(noItems.length===1?'':'s')+' noted for follow-up, none critical.';
   }
 
-  return 'Audit completed for '+locName+' on '+auditDate+(accompany?', accompanied by '+accompany+'.':'.')+(virtualMode?' (Conducted virtually via video call.)':'')+'\n'
+  let locLine='';
+  if(!virtualMode && locationCheck){
+    if(locationCheck.status==='confirmed') locLine='\nLocation verified on-site ('+locationCheck.distanceMiles+' mi from site address).';
+    else if(locationCheck.status==='flagged') locLine='\n\u26a0\ufe0f Location check flagged: '+locationCheck.distanceMiles+' mi from site address.';
+    else if(locationCheck.status==='denied') locLine='\n\u26a0\ufe0f Location permission was not granted for this visit.';
+  }
+
+  let continuityLine='';
+  if(continuityMode){
+    const cdata=continuityDataForLocation();
+    const naItemsForLoc=(cdata&&cdata.priorNAItems)||[];
+    const flaggedCount=naItemsForLoc.filter(it=>naConfirmations[it.ref]&&naConfirmations[it.ref].stillValid===false).length;
+    continuityLine='\nContinuity check following up on '+(cdata?cdata.lastAuditQuarter:'the Risk VP\'s prior audit')+' (baseline '+continuityBaseline+'%).'
+      +(flaggedCount>0?' '+flaggedCount+' prior N/A item'+(flaggedCount===1?'':'s')+' flagged as changed since last visit.':'');
+  }
+
+  return 'Audit completed for '+locName+' on '+auditDate+(accompany?', accompanied by '+accompany+'.':'.')+(virtualMode?' (Conducted virtually via video call.)':spotCheckMode?' (Conducted as a quick in-person spot-check.)':continuityMode?' (Conducted as a continuity check.)':'')+'\n'
     +'Compliance Score: '+score+'% \u2014 '+tier+'\n'
-    +issueLine;
+    +issueLine
+    +locLine
+    +continuityLine;
 }
 const AUTO_SUMMARY_MARKER='\u2014\u2014\u2014 Auto-Generated Summary \u2014\u2014\u2014';
 function requestFinalize(){
@@ -1681,8 +2059,25 @@ function buildWorkbookBlob(){
   const narrative=(document.getElementById('narrativeBox').value||'').trim();
   const docNotes=(document.getElementById('docNotesBox')?.value||'').trim();
   const photoPolicyLabel=photoPolicy==='all'?'Required for every answered question':photoPolicy==='optional'?'Optional throughout':'Required for NO findings only';
-  const HEADER_ROWS=11; // rows 0-10 are title/meta/accompany-rvp/audit-type/active-sections/photo-policy/narrative/doc-notes/blank/column-header, data starts at row index 11
-  const s1=[['VP OF RISK & SAFETY — SAFETY AUDIT'],['Location ID:',uid,'Location:',loc,'Region:',region,'State:',state],['Quarter:',qtr,'Completed By:',by,'Location Manager:',mgr,'Date of Audit:',auditDate],['Regional VP:',rvpName,'Accompanied By:',accompany||'(not entered)'],['Audit Type:',virtualMode?'\ud83c\udfa5 Virtual (Video Call)':'On-Site (In-Person)'],['Active Sections:',[...actSec].join(', ')],['Photo Evidence Policy:',photoPolicyLabel],['VP Narrative:',narrative||'(none entered)'],['Documentation to Review Separately:',docNotes||'(none entered)'],[],['#','Ref ID','Section','Audit Question','Criticality','Shift','Answer','Notes','N/A Reason','Photos'],...qs.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,q.shift,ans[q.ref]||'',notes[q.ref]||'',nar[q.ref]||''])];
+  const HEADER_ROWS=13; // rows 0-12 are title/meta/accompany-rvp/audit-type/location-check/continuity-info/active-sections/photo-policy/narrative/doc-notes/blank/column-header, data starts at row index 13
+  const locCheckLabel = virtualMode ? 'Not applicable (virtual visit)'
+    : !locationCheck ? 'Not captured'
+    : locationCheck.status==='confirmed' ? '\u2705 Confirmed on-site ('+locationCheck.distanceMiles+' mi from site address)'
+    : locationCheck.status==='flagged' ? '\u26a0\ufe0f '+locationCheck.distanceMiles+' mi from site address — location did not match'
+    : locationCheck.status==='not_configured' ? '\ud83d\udccd GPS captured, site address not on file to compare'
+    : locationCheck.status==='denied' ? '\u26a0\ufe0f Location permission not granted'
+    : locationCheck.status==='unavailable' ? 'Location services unavailable on this device'
+    : 'Not captured';
+  let continuityLabel='Not applicable';
+  if(continuityMode){
+    const cdata=continuityDataForLocation();
+    const naItemsForLoc=(cdata&&cdata.priorNAItems)||[];
+    const confirmedCount=naItemsForLoc.filter(it=>naConfirmations[it.ref]&&naConfirmations[it.ref].stillValid===true).length;
+    const flaggedCount=naItemsForLoc.filter(it=>naConfirmations[it.ref]&&naConfirmations[it.ref].stillValid===false).length;
+    continuityLabel='Baseline '+continuityBaseline+'% \u2014 following up on '+(cdata?cdata.lastAuditQuarter:'(no packet data for this location)')
+      +(naItemsForLoc.length?'; N/A review: '+confirmedCount+' confirmed, '+flaggedCount+' flagged as changed, '+(naItemsForLoc.length-confirmedCount-flaggedCount)+' not yet reviewed':'');
+  }
+  const s1=[['VP OF RISK & SAFETY — SAFETY AUDIT'],['Location ID:',uid,'Location:',loc,'Region:',region,'State:',state],['Quarter:',qtr,'Completed By:',by,'Location Manager:',mgr,'Date of Audit:',auditDate],['Regional VP:',rvpName,'Accompanied By:',accompany||'(not entered)'],['Audit Type:',virtualMode?'\ud83c\udfa5 Virtual (Video Call)':spotCheckMode?'\ud83d\udd0d Spot-Check (In-Person)':continuityMode?'\ud83d\udd17 Continuity Check (In-Person)':'On-Site (In-Person)'],['Location Verification:',locCheckLabel],['Continuity Check Info:',continuityLabel],['Active Sections:',[...actSec].join(', ')],['Photo Evidence Policy:',photoPolicyLabel],['VP Narrative:',narrative||'(none entered)'],['Documentation to Review Separately:',docNotes||'(none entered)'],[],['#','Ref ID','Section','Audit Question','Criticality','Shift','Answer','Notes','N/A Reason','Photos'],...qs.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,q.shift,ans[q.ref]||'',notes[q.ref]||'',nar[q.ref]||''])];
 
   // Mark rows that will contain photos so shXml gives them extra height
   const photoAnchors=[]; // {fromCol,fromRow,toCol,toRow,rId,picId,name}
@@ -1742,7 +2137,14 @@ function buildWorkbookBlob(){
   const zip=buildZip(files);
   const blob=new Blob([zip],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const locNameForFile=selLoc?selLoc.name.replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40):'';
-  const filename='TSC_VP_Risk_Audit_'+(uid||'Export').replace(/[^a-zA-Z0-9]/g,'_')+(locNameForFile?'_'+locNameForFile:'')+(virtualMode?'_VIRTUAL':'')+'_'+qtr.replace(/\s/g,'_')+'.xlsx';
+  // Timestamp (not the audit date, but the moment of THIS export) added to every filename so
+  // repeated exports of the same location+quarter — expected during Continuity/Spot-Check
+  // progress, but harmless to include everywhere for consistency — are never identically named,
+  // and sort chronologically so the latest is always easy to spot.
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const exportStamp=pad(now.getMonth()+1)+pad(now.getDate())+'-'+pad(now.getHours())+pad(now.getMinutes());
+  const filename='TSC_VP_Risk_Audit_'+(uid||'Export').replace(/[^a-zA-Z0-9]/g,'_')+(locNameForFile?'_'+locNameForFile:'')+(virtualMode?'_VIRTUAL':spotCheckMode?'_SPOTCHECK':continuityMode?'_CONTINUITY':'')+'_'+qtr.replace(/\s/g,'_')+'_'+exportStamp+'.xlsx';
   return {blob,filename};
 }
 
@@ -1858,10 +2260,10 @@ function buildNotifyMessage(){
     ).join('\n');
   }
 
-  const subject='VP of Risk & Safety Audit \u2014 '+locName+' ('+qtr+')'+(virtualMode?' [VIRTUAL]':'');
+  const subject='VP of Risk & Safety Audit \u2014 '+locName+' ('+qtr+')'+(virtualMode?' [VIRTUAL]':spotCheckMode?' [SPOT-CHECK]':continuityMode?' [CONTINUITY CHECK]':'');
   const body=
 'VP Risk Audit completed for '+locName+'.\n\n'+
-(virtualMode?'Audit Type: \ud83c\udfa5 Virtual (Video Call)\n':'')+
+(virtualMode?'Audit Type: \ud83c\udfa5 Virtual (Video Call)\n':spotCheckMode?'Audit Type: \ud83d\udd0d Spot-Check (In-Person, quick visit)\n':continuityMode?'Audit Type: \ud83d\udd17 Continuity Check (In-Person, baseline '+continuityBaseline+'%)\n':'')+
 'Date of Audit: '+auditDate+'\n'+
 'Quarter: '+qtr+'\n'+
 'Completed By: '+by+'\n'+
@@ -1916,6 +2318,9 @@ checkStorageHealthOnLoad();
 loadPersistedSessions();
 loadSvpCcEmail();
 loadVirtualSettings();
+loadContinuitySettings();
+updateNetStatusBadge();
+updateGpsStatusBadge();
 renderSetup();
 renderMyAudits();
 (function initDate(){
