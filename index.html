@@ -162,6 +162,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .qc-collapsed-text{flex:1;font-size:12.5px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .qc-collapsed-chevron{color:#cbd5e1;font-size:11px;flex-shrink:0}
 .qc-collapse-btn{display:block;margin:10px auto 0;background:none;border:none;color:#94a3b8;font-size:12px;font-weight:700;cursor:pointer;padding:6px 12px}
+.role-btn.active{background:#1e3a8a !important;border-color:#1e3a8a !important;color:#fff !important}
 .qc-collapse-btn:hover{color:#475569}
 .na-confirm-item{border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px}
 .na-confirm-item.flagged{border-color:#f59e0b;background:#fffbeb}
@@ -226,6 +227,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .issq{font-size:13px;font-weight:500}
 .issnote{font-size:12px;color:#64748b;font-style:italic;margin-top:2px}
 .isswarn{font-size:12px;color:#dc2626;margin-top:2px}
+.sla-badge{display:inline-block;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px}
+.sla-badge.sla-ontrack{background:#dcfce7;color:#15803d}
+.sla-badge.sla-soon{background:#fef3c7;color:#92400e}
+.sla-badge.sla-overdue{background:#fee2e2;color:#b91c1c}
+.sla-badge.sla-done{background:#e0e7ff;color:#3730a3}
 
 /* ── MOBILE (phone, one-handed use) ── */
 @media (max-width:640px){
@@ -312,6 +318,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div style="font-size:12.5px;color:#fecaca;line-height:1.5">Your answers only exist in memory right now and will be <strong>lost</strong> if you close this app, switch apps for too long, or the page reloads. Export to Excel often to keep a safe copy, or open this file in <strong>Safari</strong> instead, which reliably supports auto-save.</div>
   </div>
   <div class="scard">
+    <h2>👤 Who's Using This</h2>
+    <div class="sub">Regional VPs get a lighter-weight view — no Virtual Audit option, and Spot-Check becomes a quick action-list check instead of a full audit.</div>
+    <div style="display:flex;gap:8px">
+      <button id="roleRiskVpBtn" class="role-btn active" onclick="requestRiskVpAccess()" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;font-size:13px;font-weight:700;cursor:pointer">Risk VP</button>
+      <button id="roleRegionalVpBtn" class="role-btn" onclick="setUserRole('regional_vp')" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;font-size:13px;font-weight:700;cursor:pointer">Regional VP</button>
+    </div>
+    <div id="rvpNameRow" style="display:none;margin-top:10px">
+      <label style="font-size:12px;font-weight:600;color:#334155;display:block;margin-bottom:4px">Which Regional VP are you?</label>
+      <select id="rvpNameSelect" onchange="setActiveRvpName(this.value)" style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;background:#fff">
+        <option value="">— Select —</option>
+      </select>
+      <div class="sub" style="margin-top:6px">Shortens the location list below to just your own region.</div>
+    </div>
+    <div id="riskVpPinRow" style="display:none;margin-top:10px;padding:12px;background:#fef2f2;border:1.5px solid #dc2626;border-radius:10px">
+      <label style="font-size:12px;font-weight:700;color:#991b1b;display:block;margin-bottom:6px">🔒 Enter PIN to access Risk VP mode</label>
+      <div style="display:flex;gap:8px">
+        <input type="password" id="riskVpPinInput" inputmode="numeric" placeholder="PIN" style="flex:1;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:14px;letter-spacing:2px" onkeydown="if(event.key==='Enter')confirmRiskVpPin();">
+        <button onclick="confirmRiskVpPin()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer">Unlock</button>
+        <button onclick="cancelRiskVpPin()" style="background:#f1f5f9;color:#475569;border:none;border-radius:8px;padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer">Cancel</button>
+      </div>
+      <div id="riskVpPinError" style="display:none;color:#b91c1c;font-size:11.5px;font-weight:700;margin-top:6px">Incorrect PIN — access denied.</div>
+    </div>
+  </div>
+  <div class="scard">
     <h2>📁 My Audits <span id="myAuditsCount" style="font-size:11px;color:#94a3b8;font-weight:400"></span></h2>
     <div class="sub">Up to 15 audits can be in progress at once — resume any of them, or start a new one below.</div>
     <div id="myAuditsList"></div>
@@ -338,15 +368,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <button id="notifyBtn" onclick="openNotifyModal()" style="display:none;width:100%;margin-top:10px;background:#0e7490;color:#fff;border:none;border-radius:8px;padding:10px;font-size:12.5px;font-weight:700;cursor:pointer">📧 Notify Manager Before Audit</button>
     <div class="mrow">
-      <div class="mfield"><label>Completed By</label><input type="text" id="locby" value="Corné Wolmarans" placeholder="Name / Title"></div>
-      <div class="mfield" style="max-width:150px"><label>Date of Audit</label><input type="date" id="locdate"></div>
-      <div class="mfield" style="max-width:130px"><label>Quarter</label>
+      <div class="mfield"><label for="locby">Completed By</label><input type="text" id="locby" value="Corné Wolmarans" placeholder="Name / Title"></div>
+      <div class="mfield" style="max-width:150px"><label for="locdate">Date of Audit</label><input type="date" id="locdate"></div>
+      <div class="mfield" style="max-width:130px"><label for="locqtr">Quarter</label>
         <select id="locqtr"><option>Q1 2026</option><option>Q2 2026</option><option selected>Q3 2026</option><option>Q4 2026</option><option>Q1 2027</option></select>
       </div>
     </div>
     <div class="mrow" style="margin-top:10px">
-      <div class="mfield"><label>Location Manager <span style="color:#94a3b8;font-weight:400;text-transform:none;letter-spacing:0">(on file)</span></label><input type="text" id="locmgr" placeholder="Auto-filled — edit if needed"></div>
-      <div class="mfield"><label>Manager Accompanying Audit</label><input type="text" id="locaccompany" placeholder="Who was on-site with you today"></div>
+      <div class="mfield"><label for="locmgr">Location Manager <span style="color:#94a3b8;font-weight:400;text-transform:none;letter-spacing:0">(on file)</span></label><input type="text" id="locmgr" placeholder="Auto-filled — edit if needed"></div>
+      <div class="mfield"><label for="locaccompany">Manager Accompanying Audit</label><input type="text" id="locaccompany" placeholder="Who was on-site with you today"></div>
     </div>
     <div id="siteProfileRow" style="margin-top:12px;display:none">
       <label style="display:block;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Site Profile (optional)</label>
@@ -366,7 +396,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <h2>⚙️ Send Settings</h2>
     <div class="sub">This address is always CC'd whenever you tap "Send Audit" — set it once, it's remembered on this device.</div>
     <div class="field-row" style="display:flex;gap:8px;align-items:flex-end">
-      <div class="mfield" style="flex:1"><label>Always CC (SVP, Managed Services)</label>
+      <div class="mfield" style="flex:1"><label for="svpCcInput">Always CC (SVP, Managed Services)</label>
         <input type="email" id="svpCcInput" placeholder="firstname.lastname@theservicecompanies.com" oninput="saveSvpCcEmail()">
       </div>
     </div>
@@ -374,7 +404,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="scard">
     <h2>🎥 Virtual Audit</h2>
     <div class="sub">For smaller/lower-budget sites where an in-person visit isn't justified — conduct via video call with a reduced question set.</div>
-    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;margin-bottom:10px">
+    <label id="virtualModeLabel" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;margin-bottom:10px">
       <input type="checkbox" id="virtualModeToggle" onchange="virtualMode=this.checked;if(virtualMode){spotCheckMode=false;continuityMode=false;document.getElementById('spotCheckModeToggle').checked=false;document.getElementById('continuityModeToggle').checked=false;}updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
       <span style="font-size:13px;font-weight:600">This is a virtual audit (video call)</span>
     </label>
@@ -382,7 +412,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <input type="checkbox" id="spotCheckModeToggle" onchange="spotCheckMode=this.checked;if(spotCheckMode){virtualMode=false;continuityMode=false;document.getElementById('virtualModeToggle').checked=false;document.getElementById('continuityModeToggle').checked=false;}updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
       <span style="font-size:13px;font-weight:600">🔍 This is a quick in-person spot-check (not a full audit)</span>
     </label>
-    <div style="font-size:12px;color:#64748b;margin-bottom:8px">Virtual template: <span id="virtualCountLabel">54</span> of <span id="virtualTotalLabel">199</span> total questions selected (across all sections) — used for both Virtual Audits and Spot-Checks. The number on the Start button below reflects only what applies to the location you've picked</div>
+    <div class="sub" id="spotCheckDescLabel" style="margin-bottom:8px">For a quick in-person visit — same reduced question set as Virtual, not a full audit.</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:8px" id="virtualTemplateInfoRow">Virtual template: <span id="virtualCountLabel">54</span> of <span id="virtualTotalLabel">199</span> total questions selected (across all sections) — used for both Virtual Audits and Spot-Checks. The number on the Start button below reflects only what applies to the location you've picked</div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-slate" style="flex:1;padding:9px;font-size:12px" onclick="exportQuestionReviewList()">⬇ Export Full List (CSV)</button>
       <label class="btn btn-slate" style="flex:1;padding:9px;font-size:12px;text-align:center;cursor:pointer">⬆ Import Reviewed List
@@ -391,9 +422,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="sub" style="margin-top:8px">Export the full 199-question list, mark "Include in Virtual" and "Needs Documentation Upload" for each in Excel, then import it back. Saved on this device and reused for every virtual audit and spot-check.</div>
   </div>
-  <div class="scard">
+  <div class="scard" id="continuityCheckCard">
     <h2>🔗 Regional VP Continuity Check</h2>
-    <div class="sub">Follow-up check based on the Risk VP's own last audit at this location — re-verifies prior findings and samples each section based on its track record. Loads automatically — nothing to import.</div>
+    <div class="sub">Risk-VP-only: a fuller follow-up option that weight-samples every section, not just prior findings. Regional VPs use Spot-Check instead — same prior findings, simpler.</div>
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;margin-bottom:10px">
       <input type="checkbox" id="continuityModeToggle" onchange="continuityMode=this.checked;if(continuityMode){virtualMode=false;spotCheckMode=false;document.getElementById('virtualModeToggle').checked=false;document.getElementById('spotCheckModeToggle').checked=false;}updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
       <span style="font-size:13px;font-weight:600">This is a continuity check (following up on the Risk VP's audit)</span>
@@ -404,16 +435,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <span style="font-size:12.5px;font-weight:700;color:#0e7490" id="continuityBaselineLabel">50%</span>
     </div>
     <input type="range" id="continuityBaselineSlider" min="10" max="100" step="5" value="50" oninput="saveContinuityBaseline(this.value);document.getElementById('continuityBaselineLabel').textContent=this.value+'%';updateStartBtn();" style="width:100%;margin-bottom:10px">
-    <div class="sub" style="margin-bottom:10px">Set centrally each quarter — adjust here only if you want to check more or less than usual today.</div>
+    <div class="sub" style="margin-bottom:10px">Adjust as needed — you or each Regional VP can set this directly, no central setting required.</div>
     <details>
-      <summary style="font-size:11.5px;color:#94a3b8;cursor:pointer">Having trouble? Import a packet file manually</summary>
-      <label class="btn btn-slate" style="width:100%;padding:9px;font-size:12px;text-align:center;cursor:pointer;display:block;margin-top:8px">⬆ Import Continuity Packet
+      <summary style="font-size:11.5px;color:#94a3b8;cursor:pointer">Having trouble? Import the dashboard data file manually</summary>
+      <label class="btn btn-slate" style="width:100%;padding:9px;font-size:12px;text-align:center;cursor:pointer;display:block;margin-top:8px">⬆ Import dashboard_data.json
         <input type="file" accept=".json" style="display:none" onchange="importContinuityPacket(this.files)">
       </label>
     </details>
   </div>
   <div class="scard" style="padding:0;overflow:hidden">
     <button class="start-btn" id="startbtn" onclick="startAudit()" disabled>Select a location to begin →</button>
+  </div>
+</div>
+
+<!-- SIMPLE ACTION LIST (Regional VP Spot-Check only) -->
+<div id="simple-spotcheck-screen" style="display:none;max-width:640px;margin:0 auto;padding:0 12px">
+  <div id="simpleSpotHeader" style="background:#0f172a;color:#fff;border-radius:12px;padding:16px 18px;margin:12px 0"></div>
+  <div class="scard">
+    <h2>✅ Prior Findings — Resolved or Still Open?</h2>
+    <div class="sub">Quickly confirm each item from the Risk VP's last visit — no full audit, just a check on what's already known.</div>
+    <div id="simpleSpotList"></div>
+  </div>
+  <div class="scard">
+    <button class="btn" style="width:100%;background:#0e7490;color:#fff;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:700;cursor:pointer" onclick="sendSimpleSpotCheck()">✉️ Send Results</button>
+    <button class="btn btn-slate" style="width:100%;margin-top:8px;padding:10px;font-size:12.5px" onclick="backToSetup()">← Back to Setup</button>
   </div>
 </div>
 
@@ -649,11 +694,22 @@ let sessions=[]; // up to 5 in-progress audits: {id, locId, locName, region, qua
 let currentSessionId=null;
 const openS=new Set(ALLSEC);
 let flocs=[...LOCATIONS], hli=-1, inSum=false;
+let activeRvpName='';
+const ACTIVE_RVP_KEY='tsc_vp_audit_active_rvp_v1';
+function baseLocationList(){
+  return (userRole==='regional_vp' && activeRvpName) ? LOCATIONS.filter(l=>l.rvp===activeRvpName) : LOCATIONS;
+}
+function setActiveRvpName(name){
+  activeRvpName=name;
+  try{ localStorage.setItem(ACTIVE_RVP_KEY, name); }catch(err){}
+  filterLocs();
+}
 
 // ── LOC SEARCH ──
 function filterLocs(){
   const q=document.getElementById('ls').value.toLowerCase().trim();
-  flocs=q?LOCATIONS.filter(l=>String(l.name||'').toLowerCase().includes(q)||String(l.id||'').toLowerCase().includes(q)||String(l.region||'').toLowerCase().includes(q)||String(l.state||'').toLowerCase().includes(q)):[...LOCATIONS];
+  const base=baseLocationList();
+  flocs=q?base.filter(l=>String(l.name||'').toLowerCase().includes(q)||String(l.id||'').toLowerCase().includes(q)||String(l.region||'').toLowerCase().includes(q)||String(l.state||'').toLowerCase().includes(q)):[...base];
   hli=-1; renderDD(); openDD();
 }
 function renderDD(){
@@ -950,7 +1006,7 @@ function pickLoc(i){
   document.getElementById('lcname').textContent=selLoc.name;
   document.getElementById('lcmeta').textContent=selLoc.region+' \u00b7 '+selLoc.state+(selLoc.rvp?' \u00b7 RVP: '+selLoc.rvp:'');
   document.getElementById('lchip').style.display='flex';
-  document.getElementById('siteProfileRow').style.display='';
+  document.getElementById('siteProfileRow').style.display=(userRole==='regional_vp')?'none':'';
   const addrRow=document.getElementById('lcAddressRow');
   if(selLoc.address){
     document.getElementById('lcAddressText').textContent=selLoc.address;
@@ -959,7 +1015,7 @@ function pickLoc(i){
   } else {
     addrRow.style.display='none';
   }
-  document.getElementById('notifyBtn').style.display='';
+  document.getElementById('notifyBtn').style.display=(userRole==='regional_vp')?'none':'';
   const existing=findSessionForLocation(selLoc.id, selLoc.name);
   if(existing){
     actSec=new Set(existing.actSec);
@@ -1057,6 +1113,10 @@ function updateStartBtn(){
 
 // ── START / BACK / NEW ──
 function startAudit(isResume){
+  if(userRole==='regional_vp' && spotCheckMode){
+    startSimpleSpotCheck(isResume);
+    return;
+  }
   if(!isResume){
     const existing=findSessionForLocation(selLoc.id, selLoc.name);
     if(existing){
@@ -1114,10 +1174,180 @@ function startAudit(isResume){
   buildChips();renderSecMgmt();render();
   syncCurrentSession();
 }
+// ── SIMPLE ACTION LIST (Regional VP Spot-Check only) ──
+function startSimpleSpotCheck(isResume){
+  if(!isResume){
+    const existing=findSessionForLocation(selLoc.id, selLoc.name);
+    if(existing){
+      currentSessionId=existing.id;
+      spotCheckResolutions={...(existing.spotCheckResolutions||{})};
+      document.getElementById('locby').value=existing.completedBy||'';
+      document.getElementById('locqtr').value=existing.quarter||document.getElementById('locqtr').value;
+    } else {
+      if(sessions.length>=MAX_SESSIONS){ alert('You already have '+MAX_SESSIONS+' audits in progress. Resume or delete one first.'); return; }
+      const id='sess_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+      currentSessionId=id;
+      spotCheckResolutions={};
+      sessions.push({
+        id, locId:selLoc.id, locName:selLoc.name, region:selLoc.region,
+        quarter:document.getElementById('locqtr').value, completedBy:document.getElementById('locby').value,
+        actSec:[...actSec], ans:{}, notes:{}, nar:{}, photos:{},
+        photoPolicy, narrative:'', finalized:false, virtualMode:false, spotCheckMode:true, continuityMode:false,
+        locationCheck:null, naConfirmations:{}, spotCheckResolutions:{}, lastModified:Date.now()
+      });
+      persistSessions();
+    }
+  }
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('simple-spotcheck-screen').style.display='block';
+  renderSimpleSpotCheck();
+}
+function renderSimpleSpotCheck(){
+  const data=continuityDataForLocation();
+  const items=(data&&data.priorFindings)||[];
+  document.getElementById('simpleSpotHeader').innerHTML=
+    '<div style="font-size:11px;color:#93c5fd;text-transform:uppercase;letter-spacing:.04em">Regional VP Spot-Check</div>'
+    +'<div style="font-size:16px;font-weight:800;margin-top:2px">'+xH(selLoc.name)+'</div>'
+    +'<div style="font-size:12px;color:#94a3b8;margin-top:2px">'+xH(selLoc.region)+' \u00b7 '+xH(document.getElementById('locqtr').value)+(data?' \u00b7 Following up on '+xH(data.lastAuditQuarter):'')+'</div>';
+  const list=document.getElementById('simpleSpotList');
+  if(!items.length){
+    list.innerHTML='<div class="no-selection" style="text-align:center;padding:24px;color:#94a3b8;font-size:13px">No prior findings on file for this location \u2014 nothing to check right now. Make sure the Continuity Packet has loaded (see status on the setup screen).</div>';
+    return;
+  }
+  list.innerHTML=items.map(it=>{
+    const res=spotCheckResolutions[it.ref]||{};
+    const badge=res.resolved===true
+      ? '<span class="sla-badge sla-done">\u2705 Resolved</span>'
+      : slaBadgeHtml(it.criticality, data&&data.lastAuditDate);
+    return '<div class="na-confirm-item'+(res.resolved===false?' flagged':'')+'">'
+      +'<div class="na-confirm-meta">'+xH(it.ref)+' \u00b7 '+xH(it.section)+'</div>'
+      +'<div class="na-confirm-q">'+xH(it.question)+'</div>'
+      +(it.criticality?'<div class="na-confirm-reason">'+xH(it.criticality)+'</div>':'')
+      +(badge?'<div style="margin:6px 0">'+badge+'</div>':'')
+      +'<div class="na-confirm-btns">'
+      +'<button class="'+(res.resolved===true?'active-yes':'')+'" onclick="setSimpleSpotResolution(\''+it.ref+'\',true)">\u2705 Resolved</button>'
+      +'<button class="'+(res.resolved===false?'active-no':'')+'" onclick="setSimpleSpotResolution(\''+it.ref+'\',false)">\u26a0\ufe0f Still Open</button>'
+      +'</div>'
+      +'<input type="text" class="na-goodwill-input" placeholder="Optional note" value="'+xH(res.note||'')+'" oninput="setSimpleSpotNote(\''+it.ref+'\',this.value)">'
+      +'</div>';
+  }).join('');
+}
+function setSimpleSpotResolution(ref,resolved){
+  if(!spotCheckResolutions[ref]) spotCheckResolutions[ref]={};
+  spotCheckResolutions[ref].resolved=resolved;
+  if(resolved===true && !spotCheckResolutions[ref].resolvedDate){
+    spotCheckResolutions[ref].resolvedDate=new Date().toISOString().slice(0,10);
+  }
+  if(resolved!==true){
+    delete spotCheckResolutions[ref].resolvedDate;
+  }
+  syncSimpleSpotSession();
+  renderSimpleSpotCheck();
+}
+function setSimpleSpotNote(ref,note){
+  if(!spotCheckResolutions[ref]) spotCheckResolutions[ref]={};
+  spotCheckResolutions[ref].note=note;
+  syncSimpleSpotSession();
+}
+function syncSimpleSpotSession(){
+  const sess=sessions.find(s=>s.id===currentSessionId);
+  if(!sess)return;
+  sess.spotCheckResolutions={...spotCheckResolutions};
+  sess.completedBy=document.getElementById('locby').value;
+  sess.quarter=document.getElementById('locqtr').value;
+  sess.lastModified=Date.now();
+  persistSessions();
+}
+const RISK_VP_EMAIL='corne.wolmarans@theservicecompanies.com';
+function buildSimpleSpotCheckWorkbookBlob(){
+  const data=continuityDataForLocation();
+  const items=(data&&data.priorFindings)||[];
+  const by=document.getElementById('locby').value.trim()||'(not entered)';
+  const qtr=document.getElementById('locqtr').value;
+  const uid=selLoc.id, loc='['+selLoc.id+'] '+selLoc.name, region=selLoc.region, state=selLoc.state;
+
+  const rows=items.map(it=>{
+    const res=spotCheckResolutions[it.ref]||{};
+    const status=res.resolved===true?'Resolved':res.resolved===false?'Still Open':'Not Reviewed';
+    return [it.ref, it.section, it.question, it.criticality||'', status, res.note||'', res.resolvedDate||''];
+  });
+
+  const s1=[
+    ['REGIONAL VP SPOT-CHECK \u2014 ACTION LIST FOLLOW-UP'],
+    ['Location ID:',uid,'Location:',loc,'Region:',region,'State:',state],
+    ['Quarter:',qtr,'Completed By:',by,'Following Up On:',(data?data.lastAuditQuarter:'(no prior data)'),'Baseline Used:',continuityBaseline+'%'],
+    ['Original Audit Date:',(data&&data.lastAuditDate)||''],
+    [],
+    ['Ref','Section','Question','Criticality','Status','Note','Resolved Date'],
+    ...rows
+  ];
+
+  const wbXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="'+NSS+'" xmlns:r="'+NSR+'"><sheets><sheet name="Spot-Check" sheetId="1" r:id="rId1"/></sheets></workbook>';
+  const wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+NSP+'"><Relationship Id="rId1" Type="'+NSR+'/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="'+NSR+'/styles" Target="styles.xml"/></Relationships>';
+  const pkgRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+NSP+'"><Relationship Id="rId1" Type="'+NSR+'/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  const ct='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="'+NSC+'"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>';
+
+  const files=[
+    ['[Content_Types].xml',ENC.encode(ct)],
+    ['_rels/.rels',ENC.encode(pkgRels)],
+    ['xl/workbook.xml',ENC.encode(wbXml)],
+    ['xl/_rels/workbook.xml.rels',ENC.encode(wbRels)],
+    ['xl/styles.xml',ENC.encode(stylesXml())],
+    ['xl/worksheets/sheet1.xml',ENC.encode(shXml(s1))],
+  ];
+  const zip=buildZip(files);
+  const blob=new Blob([zip],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const locNameForFile=selLoc.name.replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40);
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const exportStamp=pad(now.getMonth()+1)+pad(now.getDate())+'-'+pad(now.getHours())+pad(now.getMinutes());
+  const filename='TSC_Regional_VP_SpotCheck_'+uid+'_'+locNameForFile+'_'+qtr.replace(/\s/g,'_')+'_'+exportStamp+'.xlsx';
+  return {blob,filename};
+}
+
+function sendSimpleSpotCheck(){
+  const data=continuityDataForLocation();
+  const items=(data&&data.priorFindings)||[];
+  const resolvedCount=items.filter(it=>spotCheckResolutions[it.ref]&&spotCheckResolutions[it.ref].resolved===true).length;
+  const stillOpenCount=items.filter(it=>spotCheckResolutions[it.ref]&&spotCheckResolutions[it.ref].resolved===false).length;
+  const notReviewed=items.length-resolvedCount-stillOpenCount;
+
+  const by=document.getElementById('locby').value.trim()||'(not entered)';
+  const qtr=document.getElementById('locqtr').value;
+  const stillOpenItems=items.filter(it=>spotCheckResolutions[it.ref]&&spotCheckResolutions[it.ref].resolved===false);
+
+  // Download the Excel file first, same pattern as the full audit's Send Audit —
+  // this is what lets the results flow into the Tracking Dashboard pipeline like everything else.
+  const {blob,filename}=buildSimpleSpotCheckWorkbookBlob();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+
+  const subject='Regional VP Spot-Check \u2014 '+selLoc.name+' ('+qtr+')';
+  const body=
+'Regional VP Spot-Check completed for '+selLoc.name+'.\n\n'+
+'Completed By: '+by+'\n'+
+'Quarter: '+qtr+(data?' \u00b7 Following up on '+data.lastAuditQuarter:'')+'\n\n'+
+'Resolved: '+resolvedCount+'   Still Open: '+stillOpenCount+(notReviewed>0?'   Not Reviewed: '+notReviewed:'')+'\n'+
+(stillOpenItems.length?'\nStill Open Items:\n'+stillOpenItems.map(it=>'\u2022 ['+it.ref+'] '+it.question+(spotCheckResolutions[it.ref].note?' \u2014 '+spotCheckResolutions[it.ref].note:'')).join('\n'):'\nAll prior findings resolved.')+
+'\n\n\u2014\u2014\u2014\nThe completed Excel workbook has been downloaded to this device \u2014 please attach it to this email before sending.';
+
+  // Results go UP to the Risk VP (Corné), CC'd to Patrick — a Regional VP is reporting
+  // findings to leadership, not to themselves.
+  const mailto='mailto:'+encodeURIComponent(RISK_VP_EMAIL)+
+    '?cc='+encodeURIComponent(PATRICK_EMAIL)+
+    '&subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  openMailto(mailto);
+}
+
 function backToSetup(){
-  syncCurrentSession();
+  if(userRole==='regional_vp' && spotCheckMode) syncSimpleSpotSession();
+  else syncCurrentSession();
   document.getElementById('setup-screen').style.display='';
   document.getElementById('audit-screen').style.display='none';
+  document.getElementById('simple-spotcheck-screen').style.display='none';
   ['pbadge','savebtn','sumbtn','expbtn','emailbtn','finalizebtn','newauditbtn','newbtn','hloc','progress-wrap'].forEach(id=>{
     document.getElementById(id).style.display='none';
   });
@@ -1191,6 +1421,106 @@ function setSTF(v){stf=v;buildChips();render();}
 let virtualMode=false; // when true, this audit is a remote/video-call visit — restricted to a customizable question set
 let spotCheckMode=false; // when true, this is a quick in-person spot-check visit — same reduced question set as Virtual, but tracked as its own category
 let continuityMode=false; // when true, this is a Regional VP follow-up check based on the Risk VP's own prior audit at this location
+let userRole='risk_vp'; // 'risk_vp' | 'regional_vp' — controls which modes/features are shown
+const USER_ROLE_KEY='tsc_vp_audit_user_role_v1';
+let spotCheckResolutions={}; // per-session, Regional VP simple Spot-Check only: ref -> {resolved:true/false, note:''}
+function loadUserRole(){
+  try{
+    const raw=localStorage.getItem(USER_ROLE_KEY);
+    if(raw==='risk_vp'||raw==='regional_vp') userRole=raw;
+    const rvpRaw=localStorage.getItem(ACTIVE_RVP_KEY);
+    if(rvpRaw) activeRvpName=rvpRaw;
+  }catch(err){}
+  applyRoleUI();
+}
+// ── RISK VP ACCESS PIN ──
+// Hardcoded in the file itself (not a per-device setting) since Regional VPs each use
+// their own separate device — a localStorage-based PIN would only protect the device it
+// was set on, not anyone else's. This is a deterrent, not real security (this is a static
+// client-side page with no backend), but it stops casual/accidental access effectively.
+// To change the PIN, edit this one line and redeploy.
+const RISK_VP_PIN='4169';
+function requestRiskVpAccess(){
+  if(userRole==='risk_vp')return; // already in, nothing to gate
+  document.getElementById('riskVpPinRow').style.display='';
+  document.getElementById('riskVpPinError').style.display='none';
+  const input=document.getElementById('riskVpPinInput');
+  input.value='';
+  input.focus();
+}
+function cancelRiskVpPin(){
+  document.getElementById('riskVpPinRow').style.display='none';
+  document.getElementById('riskVpPinInput').value='';
+}
+function confirmRiskVpPin(){
+  const entered=document.getElementById('riskVpPinInput').value.trim();
+  if(entered===RISK_VP_PIN){
+    document.getElementById('riskVpPinRow').style.display='none';
+    document.getElementById('riskVpPinInput').value='';
+    setUserRole('risk_vp');
+  } else {
+    document.getElementById('riskVpPinError').style.display='';
+    document.getElementById('riskVpPinInput').value='';
+    document.getElementById('riskVpPinInput').focus();
+  }
+}
+function setUserRole(role){
+  userRole=role;
+  try{ localStorage.setItem(USER_ROLE_KEY, role); }catch(err){}
+  applyRoleUI();
+}
+function applyRoleUI(){
+  const pinRow=document.getElementById('riskVpPinRow');
+  if(pinRow) pinRow.style.display='none';
+  const isRvp=userRole==='regional_vp';
+  const riskBtn=document.getElementById('roleRiskVpBtn');
+  const rvpBtn=document.getElementById('roleRegionalVpBtn');
+  if(riskBtn) riskBtn.classList.toggle('active', !isRvp);
+  if(rvpBtn) rvpBtn.classList.toggle('active', isRvp);
+  const virtualLabel=document.getElementById('virtualModeLabel');
+  if(virtualLabel) virtualLabel.style.display=isRvp?'none':'flex';
+  const infoRow=document.getElementById('virtualTemplateInfoRow');
+  if(infoRow) infoRow.style.display=isRvp?'none':'';
+  if(isRvp && virtualMode){ virtualMode=false; const vt=document.getElementById('virtualModeToggle'); if(vt) vt.checked=false; }
+  const notifyBtn=document.getElementById('notifyBtn');
+  if(notifyBtn && isRvp) notifyBtn.style.display='none';
+  else if(notifyBtn && selLoc) notifyBtn.style.display='';
+  const spotLabel=document.getElementById('spotCheckDescLabel');
+  if(spotLabel) spotLabel.textContent=isRvp
+    ? 'Quick check against the Risk VP\'s prior findings only — a simple resolved/still-open list, not a full audit.'
+    : 'For a quick in-person visit — same reduced question set as Virtual, not a full audit.';
+
+  // Regional VP name selector — shortens the location list to just their own region
+  const rvpRow=document.getElementById('rvpNameRow');
+  if(rvpRow) rvpRow.style.display=isRvp?'':'none';
+  if(isRvp){
+    const sel=document.getElementById('rvpNameSelect');
+    if(sel && sel.options.length<=1){
+      RVP_NAMES.forEach(n=>sel.add(new Option(n,n)));
+    }
+    if(sel) sel.value=activeRvpName;
+  } else {
+    activeRvpName=''; // reset so risk_vp always sees the full list
+  }
+
+  // Site Profile carry-forward doesn't fit the Regional VP flow — they won't have a prior
+  // export of their own sitting around, unlike the auto-fetched Continuity Packet.
+  const siteProfileRow=document.getElementById('siteProfileRow');
+  if(siteProfileRow && isRvp) siteProfileRow.style.display='none';
+  else if(siteProfileRow && selLoc) siteProfileRow.style.display='';
+
+  // Continuity Check (and its baseline % slider) is Risk-VP-only — Regional VPs get only
+  // Full Audit and Spot-Check, keeping their profile to exactly two clear choices.
+  const continuityCard=document.getElementById('continuityCheckCard');
+  if(continuityCard) continuityCard.style.display=isRvp?'none':'';
+  if(isRvp && continuityMode){
+    continuityMode=false;
+    const ct=document.getElementById('continuityModeToggle');
+    if(ct) ct.checked=false;
+  }
+
+  filterLocs(); // refresh the location list to reflect the (possibly changed) base list
+}
 let continuityPacket=null; // imported continuity_packet.json — { generatedAt, locations: { unitId: {...} } }
 let naConfirmations={}; // per-session: ref -> {stillValid: true/false, goodwillNote: string}
 const CONTINUITY_BASELINE_KEY='tsc_vp_audit_continuity_baseline_v1';
@@ -1273,24 +1603,58 @@ function loadContinuitySettings(){
 // Leadership Dashboard auto-fetches its data — Regional VPs never need to import anything
 // manually. Falls back silently to whatever's cached locally if this fails (e.g. testing
 // from a local file, or no packet has been published yet).
+const LEADERSHIP_DASHBOARD_DATA_URL='https://corne6309.github.io/TSC-Safety-Leadership-Dashboard/dashboard_data.json';
+function quarterSortKeyVP(q){
+  const m=/Q(\d)\s*(\d{4})/.exec(q||'');
+  return m?parseInt(m[2],10)*10+parseInt(m[1],10):0;
+}
+// Derives the same {locations:{id:{...}}} shape the old separate Continuity Packet file
+// used to provide, but computed client-side from the SAME dashboard_data.json the
+// Leadership Dashboard already uses — one publish action now serves both, no separate
+// file or upload step needed.
+function deriveContinuityData(rawData){
+  const riskVpSubs=(rawData.submissions||[]).filter(s=>s.sourceTool==='Risk VP Audit');
+  const byLocation={};
+  riskVpSubs.forEach(s=>{
+    const existing=byLocation[s.unitId];
+    if(!existing || quarterSortKeyVP(s.quarter)>quarterSortKeyVP(existing.quarter)){
+      byLocation[s.unitId]=s;
+    }
+  });
+  const locations={};
+  Object.entries(byLocation).forEach(([unitId,s])=>{
+    const sectionNonComplianceRates={};
+    (s.sectionBreakdown||[]).forEach(sb=>{
+      const answered=sb.yes+sb.no;
+      sectionNonComplianceRates[sb.section]=answered>0?Math.round((sb.no/answered)*100)/100:0;
+    });
+    locations[unitId]={
+      name:s.name,
+      lastAuditQuarter:s.quarter,
+      lastAuditDate:s.auditDate||'',
+      priorFindings:(s.actions||[]).map(a=>({ref:a.ref,question:a.question,criticality:a.criticality,section:a.section,notes:a.notes||''})),
+      priorNAItems:(s.naItems||[]).map(n=>({ref:n.ref,question:n.question,section:n.section,reason:n.reason||''})),
+      sectionNonComplianceRates
+    };
+  });
+  return {
+    generatedAt:rawData.generatedAt,
+    generatedAtDisplay:rawData.generatedAtDisplay,
+    locations
+  };
+}
 async function fetchContinuityPacket(){
   try{
-    const res=await fetch('continuity_packet.json',{cache:'no-store'});
+    const res=await fetch(LEADERSHIP_DASHBOARD_DATA_URL,{cache:'no-store'});
     if(!res.ok) return;
-    const data=await res.json();
-    if(!data.locations) return;
-    continuityPacket=data;
-    try{ localStorage.setItem(CONTINUITY_PACKET_KEY, JSON.stringify(data)); }catch(err){}
-    if(data.baselinePct){
-      continuityBaseline=data.baselinePct;
-      try{ localStorage.setItem(CONTINUITY_BASELINE_KEY, String(continuityBaseline)); }catch(err){}
-      const slider=document.getElementById('continuityBaselineSlider');
-      if(slider) slider.value=continuityBaseline;
-    }
+    const rawData=await res.json();
+    if(!rawData.submissions) return;
+    continuityPacket=deriveContinuityData(rawData);
+    try{ localStorage.setItem(CONTINUITY_PACKET_KEY, JSON.stringify(continuityPacket)); }catch(err){}
     updateContinuityLabel();
     if(selLoc) updateStartBtn();
   }catch(err){
-    // No hosted packet available — fine, this just means using whatever's cached locally (if anything)
+    // Leadership Dashboard data not reachable — fine, this just means using whatever's cached locally (if anything)
   }
 }
 function saveContinuityBaseline(val){
@@ -1304,17 +1668,11 @@ function importContinuityPacket(fileList){
   const reader=new FileReader();
   reader.onload=e=>{
     try{
-      const data=JSON.parse(e.target.result);
-      if(!data.locations){ alert('That file does not look like a valid continuity packet.'); return; }
-      continuityPacket=data;
-      try{ localStorage.setItem(CONTINUITY_PACKET_KEY, JSON.stringify(data)); }catch(err){}
-      if(data.baselinePct){
-        continuityBaseline=data.baselinePct;
-        try{ localStorage.setItem(CONTINUITY_BASELINE_KEY, String(continuityBaseline)); }catch(err){}
-        const slider=document.getElementById('continuityBaselineSlider');
-        if(slider) slider.value=continuityBaseline;
-      }
-      alert('Continuity packet imported \u2014 covers '+Object.keys(data.locations).length+' location(s), generated '+(data.generatedAtDisplay||'')+'.');
+      const rawData=JSON.parse(e.target.result);
+      if(!rawData.submissions){ alert('That file does not look like a valid dashboard_data.json export.'); return; }
+      continuityPacket=deriveContinuityData(rawData);
+      try{ localStorage.setItem(CONTINUITY_PACKET_KEY, JSON.stringify(continuityPacket)); }catch(err){}
+      alert('Data imported \u2014 covers '+Object.keys(continuityPacket.locations).length+' location(s), generated '+(continuityPacket.generatedAtDisplay||'')+'.');
       updateContinuityLabel();
     }catch(err){
       alert('Could not read that file: '+err.message);
@@ -1651,6 +2009,41 @@ function toggleSec(s){openS.has(s)?openS.delete(s):openS.add(s);render();}
 function expandAll(){ALLSEC.forEach(s=>openS.add(s));render();}
 function collapseAll(){openS.clear();render();}
 function xH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── SLA DUE-DATE (Critical=2wk, High=3wk, Medium=4wk from the audit date) ──
+// Purely informational here — VP Audit is a point-in-time snapshot, not an ongoing
+// tracker, so this just shows the target date a finding should be resolved by, for
+// awareness in the review summary and the Excel export.
+const SLA_DAYS={CRITICAL:14, HIGH:21, MEDIUM:28};
+function slaLevelFromCriticality(criticality){
+  const s=String(criticality||'').toUpperCase();
+  if(s.includes('CRITICAL'))return 'CRITICAL';
+  if(s.includes('HIGH'))return 'HIGH';
+  if(s.includes('MEDIUM'))return 'MEDIUM';
+  return null;
+}
+function computeSLADueDate(criticality, auditDateStr){
+  const level=slaLevelFromCriticality(criticality);
+  if(!level || !auditDateStr) return null;
+  const auditDate=new Date(auditDateStr+'T00:00:00');
+  if(isNaN(auditDate.getTime())) return null;
+  const due=new Date(auditDate.getTime() + SLA_DAYS[level]*24*60*60*1000);
+  return due;
+}
+function slaBadgeHtml(criticality, auditDateStr){
+  const due=computeSLADueDate(criticality, auditDateStr);
+  if(!due) return '';
+  const today=new Date(); today.setHours(0,0,0,0);
+  const daysLeft=Math.round((due-today)/(24*60*60*1000));
+  const dueLabel=due.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  if(daysLeft<0) return '<span class="sla-badge sla-overdue">\ud83d\udd34 Overdue \u2014 was due '+dueLabel+'</span>';
+  if(daysLeft<=3) return '<span class="sla-badge sla-soon">\ud83d\udfe1 Due '+dueLabel+' ('+daysLeft+' day'+(daysLeft===1?'':'s')+' left)</span>';
+  return '<span class="sla-badge sla-ontrack">\ud83d\udfe2 Due '+dueLabel+'</span>';
+}
+function slaDueDateText(criticality, auditDateStr){
+  const due=computeSLADueDate(criticality, auditDateStr);
+  return due?due.toISOString().slice(0,10):'';
+}
 function setA(ref,v){if(finalized)return;ans[ref]===v?delete ans[ref]:ans[ref]=v;delete collapseOverride[ref];render();syncCurrentSession();}
 function setN(ref,v){if(finalized)return;notes[ref]=v;updateProg();syncCurrentSession();}
 function setNR(ref,v){if(finalized)return;nar[ref]=v;updateProg();syncCurrentSession();}
@@ -1932,13 +2325,16 @@ function renderSum(){
   const ie=document.getElementById('sumiss');
   if(issues.length){
     ie.style.display='';
-    let ih='<h3 style="color:#b91c1c">\u26a0\ufe0f Issues Requiring Action ('+issues.length+')</h3>';
+    let ih='<h3 style="color:#b91c1c">\u26a0\ufe0f Issues Requiring Action ('+issues.length+')</h3>'
+      +'<div style="font-size:11.5px;color:#64748b;margin-bottom:10px">Target timeframes from today\'s audit date: Critical 2 weeks, High 3 weeks, Medium 4 weeks.</div>';
+    const auditDateStr=document.getElementById('locdate')?.value||'';
     issues.forEach(q=>{
       const bc=q.criticality.startsWith('\ud83d\udd34')?'#ef4444':q.criticality.startsWith('\ud83d\udfe0')?'#f97316':'#eab308';
       ih+='<div class="iss" style="border-color:'+bc+'">'
         +'<div class="issmeta">'+q.ref+' \u00b7 '+q.section+' \u00b7 '+q.criticality+'</div>'
         +'<div class="issq">'+xH(q.question)+'</div>'
         +(notes[q.ref]?'<div class="issnote">Note: '+xH(notes[q.ref])+'</div>':'<div class="isswarn">\u26a0\ufe0f No notes added</div>')
+        +'<div style="margin-top:6px">'+slaBadgeHtml(q.criticality, auditDateStr)+'</div>'
         +'</div>';
     });
     ie.innerHTML=ih;
@@ -2118,7 +2514,7 @@ function buildWorkbookBlob(){
 
   const noItems=qs.filter(q=>ans[q.ref]==='NO');
   const docItemsExport=virtualMode?qs.filter(q=>docRequiredRefs.has(q.ref)):[];
-  const s2=[['VP OF RISK & SAFETY \u2014 ACTION PLAN'],['Location:',loc,'Region:',region,'Quarter:',qtr],[],['#','Ref ID','Section','Issue / Question','Criticality','Notes / Corrective Action','Target Date','Completed By'],...noItems.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,notes[q.ref]||'','','']),
+  const s2=[['VP OF RISK & SAFETY \u2014 ACTION PLAN'],['Location:',loc,'Region:',region,'Quarter:',qtr],[],['#','Ref ID','Section','Issue / Question','Criticality','Notes / Corrective Action','Target Date','Completed By'],...noItems.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,notes[q.ref]||'',slaDueDateText(q.criticality,auditDateRaw),'']),
     ...(docItemsExport.length?[[],['DOCUMENTATION REQUESTS (Virtual Audit)'],['#','Ref ID','Section','Item','Criticality','Requested?'],...docItemsExport.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,docRequested[q.ref]?'Yes':'No'])]:[])];
   const naItems=qs.filter(q=>ans[q.ref]==='N/A');
   const s3=[['VP OF RISK & SAFETY \u2014 N/A EXCLUSIONS'],['Location:',loc,'Quarter:',qtr],[],['#','Ref ID','Section','Question','Criticality','Reason Not Applicable'],...naItems.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,nar[q.ref]||''])];
@@ -2360,6 +2756,7 @@ loadPersistedSessions();
 loadSvpCcEmail();
 loadVirtualSettings();
 loadContinuitySettings();
+loadUserRole();
 updateNetStatusBadge();
 updateGpsStatusBadge();
 renderSetup();
