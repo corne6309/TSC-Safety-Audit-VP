@@ -22,6 +22,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 #a11yControl button:nth-child(1){font-size:12px}
 #a11yControl button:nth-child(2){font-size:15px}
 #a11yControl button:nth-child(3){font-size:18px}
+#scrollNavControl{position:fixed;left:14px;bottom:44px;z-index:500;display:none;flex-direction:column;gap:6px}
+#scrollNavControl button{width:40px;height:40px;border-radius:50%;border:1.5px solid #334155;background:#0f172a;
+  color:#94a3b8;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35);line-height:1}
+#scrollNavControl button:active{background:#3b82f6;color:#fff}
 #header{background:#0f172a;color:#fff;padding:12px 14px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.4);max-width:100vw;overflow-x:hidden}
 #header-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:880px;margin:0 auto}
 #header-title{flex:1;min-width:0;display:flex;align-items:center;gap:10px}
@@ -29,6 +33,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 #header-title .label{font-size:10.5px;color:#f87171;letter-spacing:.14em;text-transform:uppercase;font-weight:700;white-space:nowrap}
 #header-title .name{font-size:19px;font-weight:800;letter-spacing:-.01em;color:#fff;line-height:1.15;text-shadow:0 1px 3px rgba(0,0,0,.3);white-space:nowrap}
 #header-btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center;position:relative}
+#helpModal,#flowModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:20px}
+#helpModal.open,#flowModal.open{display:flex}
+.help-box,.flow-box{background:#fff;border-radius:14px;padding:0;max-width:560px;width:100%;max-height:85vh;box-shadow:0 20px 60px rgba(0,0,0,.3);display:flex;flex-direction:column}
+.help-header,.flow-header{padding:20px 22px 14px;border-bottom:1.5px solid #e2e8f0;display:flex;justify-content:space-between;align-items:flex-start}
+.help-header h2,.flow-header h2{font-size:17px;font-weight:700;color:#0f172a}
+.help-header .sub,.flow-header .sub{font-size:12.5px;color:#64748b;margin-top:4px}
+.help-close,.flow-close{background:none;border:none;font-size:22px;color:#94a3b8;cursor:pointer;line-height:1;padding:0 0 0 12px}
+.help-body,.flow-body{overflow-y:auto;padding:18px 22px 22px}
+.help-section-title{font-size:13px;font-weight:700;color:#0f172a;margin:20px 0 10px;padding-top:14px;border-top:1px solid #f1f5f9}
+.help-section-title:first-child{margin-top:0;padding-top:0;border-top:none}
+.help-step{display:flex;gap:12px;margin-bottom:14px}
+.help-step-num{flex:none;width:26px;height:26px;border-radius:50%;background:#1e3a8a;color:#fff;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.help-step-text{font-size:13px;color:#334155;line-height:1.5}
+.help-step-text strong{color:#0f172a}
+.help-tip{background:#fef9c3;border-left:3px solid #eab308;padding:10px 12px;border-radius:6px;font-size:12.5px;color:#713f12;margin-bottom:10px}
+.flow-section-title{font-size:12.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.03em;margin:20px 0 12px}
+.flow-section-title:first-child{margin-top:0}
+.flow-step{border-radius:10px;padding:12px 14px;margin-bottom:4px;font-size:13px;font-weight:700}
+.flow-step .fs-sub{font-size:11.5px;font-weight:400;margin-top:2px;opacity:.85}
+.flow-arrow{text-align:center;color:#94a3b8;font-size:16px;line-height:1;padding:2px 0}
+.flow-note{font-size:12px;color:#64748b;text-align:center;margin-top:10px;font-style:italic}
 #menuToggle{display:none;background:#1e293b;border:1.5px solid #334155;color:#fff;border-radius:8px;width:34px;height:34px;font-size:18px;cursor:pointer;align-items:center;justify-content:center}
 #actionMenu{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 #progress-wrap{max-width:880px;margin:7px auto 0}
@@ -283,6 +308,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div id="header-btns">
       <span id="netStatusBadge" style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;white-space:nowrap"></span>
+      <button class="btn btn-slate" onclick="openHelpModal()" style="background:#0e7490">❓ How to Use</button>
+      <button class="btn btn-slate" onclick="openFlowModal()" style="background:#7e22ce">🗺️ Audit Flow</button>
       <span id="gpsStatusBadge" style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;white-space:nowrap;display:none"></span>
       <span class="pbadge" id="pbadge" style="color:#f59e0b;display:none">0/0</span>
       <span id="saveIndicator" style="font-size:11px;font-weight:700;color:#4ade80;opacity:0;transition:opacity .3s;white-space:nowrap">✓ Saved</span>
@@ -292,8 +319,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div id="actionMenu">
         <button class="btn btn-slate" id="savebtn" onclick="manualSave();closeHeaderMenu();" style="display:none">💾 Save Now</button>
         <button class="btn btn-blue" id="sumbtn" onclick="toggleSum();closeHeaderMenu();" style="display:none">📊 Summary</button>
+        <button class="btn" style="background:#0e7490;display:none" id="albtn" onclick="toggleActionListView();closeHeaderMenu();">📋 Action List</button>
         <button class="btn btn-green" id="expbtn" onclick="doExport();closeHeaderMenu();" style="display:none">⬇ Excel</button>
-        <button class="btn btn-purple" id="emailbtn" onclick="sendAudit();closeHeaderMenu();" style="display:none">✉️ Send Audit</button>
+        <button class="btn btn-purple" id="emailbtn" onclick="sendAudit('audit');closeHeaderMenu();" style="display:none">✉️ Send Audit</button>
+        <button class="btn" id="sendactionlistbtn" onclick="requestSendActionList();closeHeaderMenu();" style="display:none;background:#7e22ce">📋 Send Action List</button>
         <button class="btn" style="background:#1e3a8a;display:none" id="finalizebtn" onclick="requestFinalize();closeHeaderMenu();">✅ Finalize</button>
         <button class="btn" style="background:#15803d;display:none" id="newauditbtn" onclick="newAudit();closeHeaderMenu();">➕ New Audit</button>
         <button class="btn btn-amber" id="newbtn" onclick="newAudit();closeHeaderMenu();" style="display:none">📁 Switch Audit</button>
@@ -393,17 +422,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="stogrid" id="stogrid"></div>
   </div>
   <div class="scard">
-    <h2>⚙️ Send Settings</h2>
-    <div class="sub">This address is always CC'd whenever you tap "Send Audit" — set it once, it's remembered on this device.</div>
-    <div class="field-row" style="display:flex;gap:8px;align-items:flex-end">
-      <div class="mfield" style="flex:1"><label for="svpCcInput">Always CC (SVP, Managed Services)</label>
-        <input type="email" id="svpCcInput" placeholder="firstname.lastname@theservicecompanies.com" oninput="saveSvpCcEmail()">
-      </div>
-    </div>
-  </div>
-  <div class="scard">
-    <h2>🎥 Virtual Audit</h2>
-    <div class="sub">For smaller/lower-budget sites where an in-person visit isn't justified — conduct via video call with a reduced question set.</div>
+    <h2 id="virtualAuditCardTitle">🎥 Virtual Audit</h2>
+    <div class="sub" id="virtualAuditCardSub">For smaller/lower-budget sites where an in-person visit isn't justified — conduct via video call with a reduced question set.</div>
     <label id="virtualModeLabel" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;margin-bottom:10px">
       <input type="checkbox" id="virtualModeToggle" onchange="virtualMode=this.checked;if(virtualMode){spotCheckMode=false;continuityMode=false;document.getElementById('spotCheckModeToggle').checked=false;document.getElementById('continuityModeToggle').checked=false;}updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
       <span style="font-size:13px;font-weight:600">This is a virtual audit (video call)</span>
@@ -414,13 +434,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </label>
     <div class="sub" id="spotCheckDescLabel" style="margin-bottom:8px">For a quick in-person visit — same reduced question set as Virtual, not a full audit.</div>
     <div style="font-size:12px;color:#64748b;margin-bottom:8px" id="virtualTemplateInfoRow">Virtual template: <span id="virtualCountLabel">54</span> of <span id="virtualTotalLabel">199</span> total questions selected (across all sections) — used for both Virtual Audits and Spot-Checks. The number on the Start button below reflects only what applies to the location you've picked</div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-slate" style="flex:1;padding:9px;font-size:12px" onclick="exportQuestionReviewList()">⬇ Export Full List (CSV)</button>
-      <label class="btn btn-slate" style="flex:1;padding:9px;font-size:12px;text-align:center;cursor:pointer">⬆ Import Reviewed List
-        <input type="file" accept=".csv" style="display:none" onchange="importQuestionReviewList(this.files)">
-      </label>
+    <div id="questionListExportImportRow">
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-slate" style="flex:1;padding:9px;font-size:12px" onclick="exportQuestionReviewList()">⬇ Export Full List (CSV)</button>
+        <label class="btn btn-slate" style="flex:1;padding:9px;font-size:12px;text-align:center;cursor:pointer">⬆ Import Reviewed List
+          <input type="file" accept=".csv" style="display:none" onchange="importQuestionReviewList(this.files)">
+        </label>
+      </div>
+      <div class="sub" style="margin-top:8px">Export the full 199-question list, mark "Include in Virtual" and "Needs Documentation Upload" for each in Excel, then import it back. Saved on this device and reused for every virtual audit and spot-check.</div>
     </div>
-    <div class="sub" style="margin-top:8px">Export the full 199-question list, mark "Include in Virtual" and "Needs Documentation Upload" for each in Excel, then import it back. Saved on this device and reused for every virtual audit and spot-check.</div>
   </div>
   <div class="scard" id="continuityCheckCard">
     <h2>🔗 Regional VP Continuity Check</h2>
@@ -435,7 +457,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <span style="font-size:12.5px;font-weight:700;color:#0e7490" id="continuityBaselineLabel">50%</span>
     </div>
     <input type="range" id="continuityBaselineSlider" min="10" max="100" step="5" value="50" oninput="saveContinuityBaseline(this.value);document.getElementById('continuityBaselineLabel').textContent=this.value+'%';updateStartBtn();" style="width:100%;margin-bottom:10px">
-    <div class="sub" style="margin-bottom:10px">Adjust as needed — you or each Regional VP can set this directly, no central setting required.</div>
+    <div class="sub" style="margin-bottom:10px">Adjust as needed each quarter — this is a Risk VP-only setting, no central approval required.</div>
     <details>
       <summary style="font-size:11.5px;color:#94a3b8;cursor:pointer">Having trouble? Import the dashboard data file manually</summary>
       <label class="btn btn-slate" style="width:100%;padding:9px;font-size:12px;text-align:center;cursor:pointer;display:block;margin-top:8px">⬆ Import dashboard_data.json
@@ -450,14 +472,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- SIMPLE ACTION LIST (Regional VP Spot-Check only) -->
 <div id="simple-spotcheck-screen" style="display:none;max-width:640px;margin:0 auto;padding:0 12px">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0 0">
+    <button class="btn btn-slate" style="padding:8px 12px;font-size:12px" onclick="backToSetup()">← Back to Setup</button>
+    <span id="spotCheckSavedIndicator" style="font-size:11px;color:#15803d;font-weight:700;opacity:0;transition:opacity .3s">✓ Saved</span>
+  </div>
+  <div style="display:flex;gap:6px;margin:8px 0 0;flex-wrap:wrap">
+    <button class="btn" id="spotCheckFinalizeBtnTop" style="flex:1;min-width:140px;background:#15803d;color:#fff;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer" onclick="requestSpotCheckFinalize()">✅ Finalize Spot-Check</button>
+    <button class="btn btn-slate" id="spotCheckUnlockBtnTop" style="flex:1;min-width:140px;padding:9px;font-size:11.5px;display:none" onclick="unlockSpotCheckFinalize()">🔓 Unlock to Fix a Mistake</button>
+    <button class="btn" id="spotCheckSendBtnTop" style="flex:1;min-width:140px;background:#0e7490;color:#fff;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;display:none" onclick="sendSimpleSpotCheck()">✉️ Send Results</button>
+  </div>
   <div id="simpleSpotHeader" style="background:#0f172a;color:#fff;border-radius:12px;padding:16px 18px;margin:12px 0"></div>
   <div class="scard">
     <h2>✅ Prior Findings — Resolved or Still Open?</h2>
     <div class="sub">Quickly confirm each item from the Risk VP's last visit — no full audit, just a check on what's already known.</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn btn-slate" style="padding:6px 12px;font-size:11.5px" onclick="spotCheckExpandAll()">Expand All</button>
+      <button class="btn btn-slate" style="padding:6px 12px;font-size:11.5px" onclick="spotCheckCollapseAll()">Collapse All</button>
+    </div>
     <div id="simpleSpotList"></div>
   </div>
   <div class="scard">
-    <button class="btn" style="width:100%;background:#0e7490;color:#fff;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:700;cursor:pointer" onclick="sendSimpleSpotCheck()">✉️ Send Results</button>
+    <button class="btn" id="spotCheckFinalizeBtn" style="width:100%;background:#15803d;color:#fff;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:700;cursor:pointer" onclick="requestSpotCheckFinalize()">✅ Finalize Spot-Check</button>
+    <button class="btn btn-slate" id="spotCheckUnlockBtn" style="width:100%;padding:10px;font-size:12.5px;display:none" onclick="unlockSpotCheckFinalize()">🔓 Unlock to Fix a Mistake</button>
+    <button class="btn" id="spotCheckSendBtn" style="width:100%;background:#0e7490;color:#fff;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;display:none;margin-top:8px" onclick="sendSimpleSpotCheck()">✉️ Send Results</button>
     <button class="btn btn-slate" style="width:100%;margin-top:8px;padding:10px;font-size:12.5px" onclick="backToSetup()">← Back to Setup</button>
   </div>
 </div>
@@ -526,6 +563,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="sumcard" id="sumsecs"></div>
     <div class="sumcard" id="sumiss" style="display:none"></div>
   </div>
+  <div id="actionlistpane" style="display:none"></div>
 </div>
 </div><!-- /zoomWrap -->
 
@@ -535,7 +573,116 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button id="zoom150" onclick="setTextZoom(1.5)" aria-label="Extra large text size">A</button>
 </div>
 
+<div id="scrollNavControl">
+  <button onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll to top">↑</button>
+  <button onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})" aria-label="Scroll to bottom">↓</button>
+</div>
+
 <div id="footbanner">TSC PROPRIETARY AND CONFIDENTIAL — OFFICIAL VP RISK AUDIT — INTERNAL USE ONLY</div>
+
+<div id="helpModal">
+  <div class="help-box">
+    <div class="help-header">
+      <div>
+        <h2 id="helpModalTitle">❓ How to Use This Tool</h2>
+        <div class="sub" id="helpModalSub">A quick walkthrough of your workflow.</div>
+      </div>
+      <button class="help-close" onclick="closeHelpModal()">✕</button>
+    </div>
+    <div class="help-body">
+
+      <div id="helpContentRiskVp">
+        <div class="help-section-title">📋 The Full Process, Step by Step</div>
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-text"><strong>Pick a location, then choose your mode.</strong> On-Site is the default full audit. Virtual is for remote/video-call visits with a reduced question set. Continuity Check is a follow-up with weighted section sampling against your own prior findings.</div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-text"><strong>Notify the manager before you arrive (optional).</strong> Auto-fills their email from location data — sends a heads-up with the date and what to expect.</div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-text"><strong>Answer each question.</strong> YES, NO, or N/A. GPS captures automatically on On-Site/Spot-Check visits to confirm you were actually on-site.</div></div>
+        <div class="help-step"><div class="help-step-num">4</div><div class="help-step-text"><strong>Multiple locations at once?</strong> Tap "📁 Switch Audit" — up to 15 concurrent sessions are supported, so you can start one location and pick up another without losing progress on either.</div></div>
+        <div class="help-step"><div class="help-step-num">5</div><div class="help-step-text"><strong>Finalize, then Excel, then Send Audit.</strong> Same order every time — the export downloads first, then the email opens with the Regional VP and Patrick already included; attach the file before sending.</div></div>
+        <div class="help-step"><div class="help-step-num">6</div><div class="help-step-text"><strong>Check your Action List afterward.</strong> Every NO finding shows up automatically with a colored urgency badge (🟢/🟡/🔴 based on when it was flagged). Update status — Open, In Progress, or Resolved — as items get fixed over time, not just on the day of the audit.</div></div>
+        <div class="help-step"><div class="help-step-num">7</div><div class="help-step-text"><strong>Fixed something later? Tap "📋 Send Action List."</strong> This sends just an updated status — separate from Send Audit, which is only for your first submission. It stays locked (🔒) until the initial audit is actually sent, so there's never a status update with nothing behind it.</div></div>
+        <div class="help-tip">🗓️ <strong>You do NOT have to finish an audit in one sitting.</strong> Progress saves automatically — close the app and pick up later, any time this quarter.</div>
+        <div class="help-tip">💡 Continuity Check pulls your own prior findings automatically from the Leadership Dashboard — no separate file to import.</div>
+      </div>
+
+      <div id="helpContentRegionalVp">
+        <div class="help-tip" style="background:#dbeafe;border-left-color:#1e3a8a;color:#1e3a8a;font-weight:600">🎯 Your role is verification. The Risk VP conducts the full independent audit — your job is confirming their findings actually get fixed. Spot-Check is how you do that, and it's the option you'll use almost every time.</div>
+
+        <div class="help-section-title">🔍 Spot-Check — Your Primary Workflow</div>
+        <div class="help-step-text" style="margin-bottom:10px">Spot-Check is <strong>not</strong> a new audit — it's a focused follow-up on the Risk VP's <strong>prior findings</strong> at that location. It loads automatically once you pick the location — nothing to import.</div>
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-text"><strong>Pick your name from the Regional VP list, then a location.</strong> Spot-Check is selected automatically — this shortens the location list to just your own region.</div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-text">You'll see each finding the Risk VP previously flagged, with a colored badge showing urgency (🟢 on track / 🟡 due soon / 🔴 overdue) based on when it was originally flagged — not today's date.</div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-text">For each one, tap <strong>"✅ Resolved"</strong> or <strong>"⚠️ Still Open"</strong>. Add a quick note if useful.</div></div>
+        <div class="help-step"><div class="help-step-num">4</div><div class="help-step-text">Once every item is marked, tap <strong>"✅ Finalize Spot-Check"</strong> — this locks your answers, so it's greyed out until everything's checked. Made a mistake? Tap <strong>"🔓 Unlock to Fix a Mistake"</strong> to go back in.</div></div>
+        <div class="help-step"><div class="help-step-num">5</div><div class="help-step-text">Tap <strong>"Send Results,"</strong> now available after finalizing. This downloads a small Excel file and opens an email addressed to <strong>the Risk VP and Patrick</strong> — not to you. Attach the file before sending.</div></div>
+        <div class="help-tip">✅ Once sent, tap <strong>"← Back to Setup"</strong> — that's it, you're done with this location. It'll show as <strong>"✅ Sent"</strong> in "My Audits" (instead of a % complete) so it's clear this one's finished, not still outstanding. It stays in your list for reference — delete it whenever you're ready, there's no rush.</div>
+        <div class="help-tip">💡 Spot-Check is intentionally lightweight — no full question set, no new findings of your own. It's purely "here's what changed since the last visit." This shortens your time on-site and keeps everyone focused on getting the Risk VP's findings actually resolved.</div>
+
+        <div class="help-section-title">📋 On-Site — Occasional Fallback Only</div>
+        <div class="help-step-text" style="margin-bottom:10px">On-Site is a full audit, available if you genuinely need one — but it's not your typical workflow. If you use it, it works like a standard full audit: answer every question, Finalize, then Excel and Send Audit. It does <strong>not</strong> have its own ongoing Action List tracking — that capability is reserved for the Risk VP's own audits, since your role is verification via Spot-Check, not running a second independent audit.</div>
+        <div class="help-tip">🗓️ <strong>You do NOT have to finish an On-Site audit in one sitting.</strong> Progress saves automatically — close the app and pick up later, any time this quarter.</div>
+        <div class="help-tip">💡 <strong>"📁 Switch Audit" doesn't erase anything.</strong> It saves your current location's progress first, then clears the screen so you can start a different location — nothing is lost either way.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="flowModal">
+  <div class="flow-box">
+    <div class="flow-header">
+      <div>
+        <h2 id="flowModalTitle">🗺️ Audit Flow</h2>
+        <div class="sub" id="flowModalSub">A quick visual overview.</div>
+      </div>
+      <button class="flow-close" onclick="closeFlowModal()">✕</button>
+    </div>
+    <div class="flow-body">
+
+      <div id="flowContentRiskVp">
+        <div class="flow-section-title">Full audit (On-Site, Virtual, or Continuity Check)</div>
+        <div class="flow-step" style="background:#f1f5f9;color:#334155">1. Pick location &amp; choose mode</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#f1f5f9;color:#334155">2. Notify manager <div class="fs-sub">optional, before arriving</div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#f1f5f9;color:#334155">3. Answer questions <div class="fs-sub">GPS captured automatically</div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#f1f5f9;color:#334155">4. Finalize</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#ccfbf1;color:#0f766e">5. Excel + Send Audit <div class="fs-sub">To Regional VP + Patrick</div></div>
+        <div class="flow-note">Up to 15 locations at once via "Switch Audit"</div>
+
+        <div class="flow-section-title">Ongoing (as findings get fixed)</div>
+        <div class="flow-step" style="background:#f1f5f9;color:#334155">Update Action List status <div class="fs-sub">Open → In Progress → Resolved</div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#f3e8ff;color:#6b21a8">Send Action List <div class="fs-sub">Locked until initial audit is sent</div></div>
+        <div class="flow-note">Separate from Send Audit — for updates only</div>
+      </div>
+
+      <div id="flowContentRegionalVp">
+        <div class="flow-section-title">Spot-Check — your primary workflow</div>
+        <div class="flow-step" style="background:#f1f5f9;color:#334155">1. Pick your name, then location</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#f1f5f9;color:#334155">2. Prior findings load automatically <div class="fs-sub">Risk VP's last visit</div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#f1f5f9;color:#334155">3. Mark Resolved or Still Open <div class="fs-sub">per finding, add a note</div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#dcfce7;color:#15803d">4. Finalize <div class="fs-sub">Locked until every item is checked</div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#f3e8ff;color:#6b21a8">5. Send Results <div class="fs-sub">to Risk VP + Patrick</div></div>
+        <div class="flow-note">Verification, not a new audit — this is your role</div>
+
+        <div class="flow-section-title">On-Site — occasional fallback only</div>
+        <div class="flow-step" style="background:#f1f5f9;color:#334155">1. Pick your name, then location</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#f1f5f9;color:#334155">2. Answer questions, Finalize</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#ccfbf1;color:#0f766e">3. Excel + Send Audit <div class="fs-sub">To Risk VP + Patrick</div></div>
+        <div class="flow-note">No ongoing Action List tracking — that's the Risk VP's own tool</div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <script>
 // ── SAFETY NET: catch any uncaught error so the page never just goes blank ──
@@ -580,6 +727,13 @@ const COL = {
 };
 
 const ans={}, notes={}, nar={}, photos={}, docRequested={};
+const actionStatus={}; // ref -> {status:'Open'|'In Progress'|'Resolved', note:string, resolvedDate?:string}
+let emailMode='audit'; // 'audit' (initial/full submission) or 'actionlist' (status-only update)
+// Tracks whether the CURRENT action list state has been emailed since it last changed —
+// mirrors the same safeguard built for Self-Assessment. Per-session, not global, since
+// each of the 15 concurrent audits has its own independent Action List to track.
+let actionListSentSinceChange=true;
+let initialAuditSent=false; // whether THIS session's initial full audit has ever been sent
 const collapseOverride={}; // ref -> true/false, only set once user manually taps to expand/collapse
 function isQCollapsed(q){
   const a=ans[q.ref];
@@ -753,13 +907,30 @@ document.addEventListener('click',e=>{if(!document.getElementById('lsw').contain
 
 // ── SESSION MANAGEMENT (up to 5 concurrent in-progress audits) ──
 function sessionProgress(sess){
+  if(sess.spotCheckMode){
+    // Spot-Check sessions track progress via spotCheckResolutions, not sess.ans — using
+    // the main-audit fields here would always incorrectly show 0%, regardless of real progress.
+    const data=continuityDataForLocationById(sess.locId);
+    const items=(data&&data.priorFindings)||[];
+    if(!items.length)return 0;
+    const checked=items.filter(it=>{
+      const r=(sess.spotCheckResolutions||{})[it.ref];
+      return r && (r.resolved===true||r.resolved===false);
+    }).length;
+    return Math.round(checked/items.length*100);
+  }
   const activeQsForSess=QUESTIONS.filter(q=>sess.actSec.includes(q.section));
   const answered=activeQsForSess.filter(q=>sess.ans[q.ref]).length;
   const tot=activeQsForSess.length;
   return tot>0?Math.round(answered/tot*100):0;
 }
 function findSessionForLocation(locId, locName){
-  return sessions.find(s=>s.locId===locId && s.locName===locName);
+  // Role-aware: a Regional VP must never be matched to (and silently resume) a Risk VP's
+  // session for the same location, or vice versa — these are separate audit contexts now.
+  return sessions.find(s=>s.locId===locId && s.locName===locName && (s.createdByRole||'risk_vp')===userRole);
+}
+function sessionsForCurrentRole(){
+  return sessions.filter(s=>(s.createdByRole||'risk_vp')===userRole);
 }
 function snapshotWorkingState(){
   return {
@@ -782,7 +953,10 @@ function snapshotWorkingState(){
     spotCheckMode,
     locationCheck,
     continuityMode,
-    naConfirmations:{...naConfirmations}
+    naConfirmations:{...naConfirmations},
+    actionStatus:JSON.parse(JSON.stringify(actionStatus)),
+    actionListSentSinceChange,
+    initialAuditSent
   };
 }
 const STORAGE_KEY='tsc_vp_audit_sessions_v1';
@@ -806,6 +980,7 @@ function persistSessions(){
     if(readBack===payload){
       persistOK=true;
       showSaveIndicator(true);
+      showSaveIndicator(true,'spotCheckSavedIndicator');
       hideStorageWarning();
     } else {
       throw new Error('read-back verification failed');
@@ -813,6 +988,7 @@ function persistSessions(){
   }catch(err){
     persistOK=false;
     showSaveIndicator(false);
+    showSaveIndicator(false,'spotCheckSavedIndicator');
     showStorageWarning();
     console.warn('Could not verify saved data in local storage:', err);
   }
@@ -851,8 +1027,8 @@ function hideStorageWarning(){
   const el=document.getElementById('storageWarning');
   if(el) el.style.display='none';
 }
-function showSaveIndicator(ok){
-  const el=document.getElementById('saveIndicator');
+function showSaveIndicator(ok,elId){
+  const el=document.getElementById(elId||'saveIndicator');
   if(!el)return;
   el.textContent=ok?'\u2713 Saved':'\u26a0\ufe0f Not saved';
   el.style.color=ok?'#4ade80':'#f87171';
@@ -882,10 +1058,17 @@ function loadSessionIntoWorkingState(sess){
   spotCheckMode=!!sess.spotCheckMode;
   continuityMode=!!sess.continuityMode;
   Object.keys(naConfirmations).forEach(k=>delete naConfirmations[k]); Object.assign(naConfirmations,sess.naConfirmations||{});
+  Object.keys(actionStatus).forEach(k=>delete actionStatus[k]); Object.assign(actionStatus,sess.actionStatus||{});
+  actionListSentSinceChange=sess.actionListSentSinceChange!==undefined?!!sess.actionListSentSinceChange:true;
+  initialAuditSent=!!sess.initialAuditSent;
 }
 function resumeSession(id){
   const sess=sessions.find(s=>s.id===id);
   if(!sess)return;
+  // Defense-in-depth: My Audits only lists the current role's own sessions, but refuse here
+  // too in case this is ever reached another way — a role must never resume into another
+  // role's session.
+  if((sess.createdByRole||'risk_vp')!==userRole)return;
   currentSessionId=id;
   loadSessionIntoWorkingState(sess);
   document.getElementById('locby').value=sess.completedBy||'';
@@ -967,30 +1150,44 @@ function confirmDeleteSession(id){
 function renderMyAudits(){
   const wrap=document.getElementById('myAuditsList');
   const countEl=document.getElementById('myAuditsCount');
-  countEl.textContent=sessions.length+' of '+MAX_SESSIONS+' in progress';
-  if(!sessions.length){
+  // Only show sessions created under the CURRENT role — a Regional VP should never see or
+  // be able to resume a Risk VP's full audit session (or vice versa). Sessions saved before
+  // this field existed default to 'risk_vp', since that's who nearly all historical usage
+  // came from — safer than treating them as ownerless and hiding them from everyone.
+  const visibleSessions=sessionsForCurrentRole();
+  countEl.textContent=visibleSessions.length+' of '+MAX_SESSIONS+' in progress';
+  if(!visibleSessions.length){
     wrap.innerHTML='<div style="text-align:center;padding:18px;color:#94a3b8;font-size:12px">No audits in progress yet — select a location below to start one.</div>';
     return;
   }
-  wrap.innerHTML=sessions.map(sess=>{
+  wrap.innerHTML=visibleSessions.map(sess=>{
     const pct=sessionProgress(sess);
     const isCurrent=sess.id===currentSessionId;
     const confirming=pendingDeleteId===sess.id;
+    // Status hierarchy applies the same way to both Spot-Check and full-audit sessions —
+    // once finalized, "X% complete" is no longer meaningful; what matters is whether it's
+    // actually been sent yet, so a completed session never looks like it's still outstanding.
+    const isFinalized=sess.spotCheckMode?!!sess.spotCheckFinalized:!!sess.finalized;
+    const isSent=sess.spotCheckMode?!!sess.spotCheckSent:!!sess.initialAuditSent;
+    let statusText, statusColor;
+    if(isSent){ statusText='✅ Sent'; statusColor='#15803d'; }
+    else if(isFinalized){ statusText='✅ Finalized — not yet sent'; statusColor='#b45309'; }
+    else { statusText=pct+'% complete'; statusColor='#94a3b8'; }
     if(confirming){
       return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1.5px solid #dc2626;background:#fef2f2;margin-bottom:7px">'
         +'<div style="flex:1;min-width:0">'
         +'<div style="font-size:12.5px;font-weight:700;color:#991b1b">\u26a0\ufe0f Delete "'+xH(sess.locName)+'" permanently?</div>'
-        +'<div style="font-size:11px;color:#b91c1c;margin-top:2px">This cannot be undone \u2014 '+pct+'% of answers will be lost.</div>'
+        +'<div style="font-size:11px;color:#b91c1c;margin-top:2px">This cannot be undone \u2014 '+(isSent?'this submission':pct+'% of answers')+' will be lost.</div>'
         +'</div>'
         +'<button class="btn btn-slate" style="padding:6px 12px;font-size:11px" onclick="cancelDeleteSession()">Cancel</button>'
         +'<button class="btn" style="padding:6px 12px;font-size:11px;background:#dc2626;color:#fff;font-weight:800" onclick="confirmDeleteSession(\''+sess.id+'\')">Yes, Delete</button>'
         +'</div>';
     }
-    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1.5px solid '+(isCurrent?'#b91c1c':'#e2e8f0')+';background:'+(isCurrent?'#fef2f2':'#fff')+';margin-bottom:7px">'
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1.5px solid '+(isCurrent?'#b91c1c':isSent?'#bbf7d0':'#e2e8f0')+';background:'+(isCurrent?'#fef2f2':isSent?'#f0fdf4':'#fff')+';margin-bottom:7px">'
       +'<div style="flex:1;min-width:0">'
       +'<div style="font-size:12.5px;font-weight:700;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
       +'<span style="background:#1e293b;color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;margin-right:5px">'+xH(sess.locId)+'</span>'+xH(sess.locName)+'</div>'
-      +'<div style="font-size:11px;color:#94a3b8;margin-top:2px">'+xH(sess.quarter)+' \u00b7 '+pct+'% complete'+(isCurrent?' \u00b7 <strong style="color:#b91c1c">currently open</strong>':'')+'</div>'
+      +'<div style="font-size:11px;color:'+statusColor+';font-weight:'+(isSent||isFinalized?'700':'400')+';margin-top:2px">'+xH(sess.quarter)+' \u00b7 '+statusText+(isCurrent?' \u00b7 <span style="color:#b91c1c">currently open</span>':'')+'</div>'
       +'</div>'
       +'<button class="btn btn-slate" style="padding:5px 11px;font-size:11px" onclick="resumeSession(\''+sess.id+'\')">'+(isCurrent?'Continue':'Resume')+'</button>'
       +'<button class="btn" style="padding:5px 9px;font-size:11px;background:#fee2e2;color:#b91c1c" onclick="requestDeleteSession(\''+sess.id+'\')">Delete</button>'
@@ -1033,11 +1230,15 @@ function pickLoc(i){
     document.getElementById('locmgr').value=selLoc.manager||'';
     document.getElementById('locaccompany').value='';
     virtualMode=false;
-    spotCheckMode=false;
+    // Spot-Check is the default for every fresh Regional VP location pick — this is their
+    // primary workflow, so it should never require a manual re-check per location. Only
+    // turned off by a deliberate manual uncheck (their own choice, or per Risk VP instruction
+    // to run a full audit at that specific site).
+    spotCheckMode=(userRole==='regional_vp');
     continuityMode=false;
     locationCheck=null;
     document.getElementById('virtualModeToggle').checked=false;
-    document.getElementById('spotCheckModeToggle').checked=false;
+    document.getElementById('spotCheckModeToggle').checked=spotCheckMode;
     document.getElementById('continuityModeToggle').checked=false;
     // Picking a genuinely new (unsaved) location starts clean — clears any stale
     // working state left over from a previous pick that was never started.
@@ -1101,7 +1302,7 @@ function updateStartBtn(){
       btn.disabled=false;
       const pct=sessionProgress(existing);
       btn.textContent='Resume Audit \u2014 '+pct+'% complete \u2192';
-    } else if(sessions.length>=MAX_SESSIONS){
+    } else if(sessionsForCurrentRole().length>=MAX_SESSIONS){
       btn.disabled=true;
       btn.textContent='\u26a0\ufe0f '+MAX_SESSIONS+' audits in progress \u2014 resume or delete one first';
     } else {
@@ -1128,7 +1329,7 @@ function startAudit(isResume){
       if(existing.auditDate) document.getElementById('locdate').value=existing.auditDate;
       document.getElementById('locqtr').value=existing.quarter||document.getElementById('locqtr').value;
     } else {
-      if(sessions.length>=MAX_SESSIONS){ alert('You already have '+MAX_SESSIONS+' audits in progress. Resume or delete one first.'); return; }
+      if(sessionsForCurrentRole().length>=MAX_SESSIONS){ alert('You already have '+MAX_SESSIONS+' audits in progress. Resume or delete one first.'); return; }
       const id='sess_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
       currentSessionId=id;
       finalized=false;
@@ -1141,16 +1342,19 @@ function startAudit(isResume){
         actSec:[...actSec],
         ans:{...ans}, notes:{...notes}, nar:{...nar},
         photos:Object.fromEntries(Object.entries(photos).map(([k,v])=>[k,v.map(p=>({...p}))])),
-        photoPolicy, narrative:'', finalized:false, virtualMode, spotCheckMode, locationCheck:null, continuityMode, naConfirmations:{}, lastModified:Date.now()
+        photoPolicy, narrative:'', finalized:false, virtualMode, spotCheckMode, locationCheck:null, continuityMode, naConfirmations:{},
+        actionStatus:{...actionStatus}, actionListSentSinceChange, initialAuditSent, createdByRole:userRole, lastModified:Date.now()
       });
       persistSessions();
     }
   }
   document.getElementById('setup-screen').style.display='none';
   document.getElementById('audit-screen').style.display='block';
-  ['pbadge','savebtn','sumbtn','expbtn','emailbtn','finalizebtn','newauditbtn','newbtn','hloc','progress-wrap'].forEach(id=>{
+  updateScrollNavVisibility(true);
+  ['pbadge','savebtn','sumbtn','albtn','expbtn','emailbtn','finalizebtn','newauditbtn','newbtn','hloc','progress-wrap'].forEach(id=>{
     document.getElementById(id).style.display='';
   });
+  updateSendActionListBtnAppearance();
   document.getElementById('hloctext').innerHTML=
     '<span style="background:#1e3a8a;color:#bfdbfe;padding:1px 7px;border-radius:4px;font-weight:700;font-size:11px;margin-right:5px">'+xH(selLoc.id)+'</span>'
     +(virtualMode?'<span style="background:#0e7490;color:#a5f3fc;padding:1px 7px;border-radius:4px;font-weight:700;font-size:11px;margin-right:5px">\ud83c\udfa5 VIRTUAL</span>':'')
@@ -1181,58 +1385,155 @@ function startSimpleSpotCheck(isResume){
     if(existing){
       currentSessionId=existing.id;
       spotCheckResolutions={...(existing.spotCheckResolutions||{})};
+      spotCheckFinalized=!!existing.spotCheckFinalized;
+      spotCheckSent=!!existing.spotCheckSent;
       document.getElementById('locby').value=existing.completedBy||'';
       document.getElementById('locqtr').value=existing.quarter||document.getElementById('locqtr').value;
     } else {
-      if(sessions.length>=MAX_SESSIONS){ alert('You already have '+MAX_SESSIONS+' audits in progress. Resume or delete one first.'); return; }
+      if(sessionsForCurrentRole().length>=MAX_SESSIONS){ alert('You already have '+MAX_SESSIONS+' audits in progress. Resume or delete one first.'); return; }
       const id='sess_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
       currentSessionId=id;
       spotCheckResolutions={};
+      spotCheckFinalized=false;
+      spotCheckSent=false;
       sessions.push({
         id, locId:selLoc.id, locName:selLoc.name, region:selLoc.region,
         quarter:document.getElementById('locqtr').value, completedBy:document.getElementById('locby').value,
         actSec:[...actSec], ans:{}, notes:{}, nar:{}, photos:{},
         photoPolicy, narrative:'', finalized:false, virtualMode:false, spotCheckMode:true, continuityMode:false,
-        locationCheck:null, naConfirmations:{}, spotCheckResolutions:{}, lastModified:Date.now()
+        locationCheck:null, naConfirmations:{}, spotCheckResolutions:{}, spotCheckFinalized:false, spotCheckSent:false,
+        createdByRole:userRole, lastModified:Date.now()
       });
       persistSessions();
     }
   }
   document.getElementById('setup-screen').style.display='none';
   document.getElementById('simple-spotcheck-screen').style.display='block';
+  updateScrollNavVisibility(true);
   renderSimpleSpotCheck();
 }
 function renderSimpleSpotCheck(){
   const data=continuityDataForLocation();
   const items=(data&&data.priorFindings)||[];
+  const checkedCount=items.filter(it=>{
+    const r=spotCheckResolutions[it.ref];
+    return r && (r.resolved===true || r.resolved===false);
+  }).length;
+  const totalCount=items.length;
+  const pct=totalCount>0?Math.round(checkedCount/totalCount*100):0;
   document.getElementById('simpleSpotHeader').innerHTML=
-    '<div style="font-size:11px;color:#93c5fd;text-transform:uppercase;letter-spacing:.04em">Regional VP Spot-Check</div>'
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+    +'<div>'
+    +'<div style="font-size:11px;color:#93c5fd;text-transform:uppercase;letter-spacing:.04em">Regional VP Spot-Check</div>'
     +'<div style="font-size:16px;font-weight:800;margin-top:2px">'+xH(selLoc.name)+'</div>'
-    +'<div style="font-size:12px;color:#94a3b8;margin-top:2px">'+xH(selLoc.region)+' \u00b7 '+xH(document.getElementById('locqtr').value)+(data?' \u00b7 Following up on '+xH(data.lastAuditQuarter):'')+'</div>';
+    +'<div style="font-size:12px;color:#94a3b8;margin-top:2px">'+xH(selLoc.region)+' \u00b7 '+xH(document.getElementById('locqtr').value)+(data?' \u00b7 Following up on '+xH(data.lastAuditQuarter):'')+'</div>'
+    +'</div>'
+    +(totalCount>0?'<span class="pbadge" style="color:'+(pct===100?'#4ade80':'#f59e0b')+';flex:none">'+checkedCount+' / '+totalCount+'</span>':'')
+    +'</div>';
+
+  // Finalize gates Send Results — locked items become read-only, matching the main audit's
+  // finalize/unlock pattern so it needs no new explanation for anyone already used to it.
+  function applyFinalizeBtnState(finBtn,unlockBtn,sendBtn){
+    if(!finBtn||!unlockBtn||!sendBtn)return;
+    if(spotCheckFinalized){
+      finBtn.style.display='none';
+      unlockBtn.style.display='';
+      sendBtn.style.display='';
+    } else {
+      finBtn.style.display='';
+      unlockBtn.style.display='none';
+      sendBtn.style.display='none';
+      const allChecked=totalCount>0 && checkedCount===totalCount;
+      finBtn.disabled=!allChecked;
+      finBtn.style.background=allChecked?'#15803d':'#94a3b8';
+      finBtn.style.cursor=allChecked?'pointer':'not-allowed';
+      finBtn.textContent=allChecked?'✅ Finalize Spot-Check':'🔒 Finalize ('+checkedCount+'/'+totalCount+' checked)';
+    }
+  }
+  applyFinalizeBtnState(document.getElementById('spotCheckFinalizeBtn'),document.getElementById('spotCheckUnlockBtn'),document.getElementById('spotCheckSendBtn'));
+  applyFinalizeBtnState(document.getElementById('spotCheckFinalizeBtnTop'),document.getElementById('spotCheckUnlockBtnTop'),document.getElementById('spotCheckSendBtnTop'));
+
   const list=document.getElementById('simpleSpotList');
   if(!items.length){
     list.innerHTML='<div class="no-selection" style="text-align:center;padding:24px;color:#94a3b8;font-size:13px">No prior findings on file for this location \u2014 nothing to check right now. Make sure the Continuity Packet has loaded (see status on the setup screen).</div>';
     return;
   }
+  const dis=spotCheckFinalized?' disabled':'';
   list.innerHTML=items.map(it=>{
     const res=spotCheckResolutions[it.ref]||{};
+    const isChecked=res.resolved===true||res.resolved===false;
+    const isCollapsed=isChecked && (spotCheckCollapseOverride.hasOwnProperty(it.ref)?spotCheckCollapseOverride[it.ref]:true);
     const badge=res.resolved===true
       ? '<span class="sla-badge sla-done">\u2705 Resolved</span>'
       : slaBadgeHtml(it.criticality, data&&data.lastAuditDate);
-    return '<div class="na-confirm-item'+(res.resolved===false?' flagged':'')+'">'
+
+    if(isCollapsed){
+      const pillColor=res.resolved===true?'#15803d':'#b91c1c';
+      const pillBg=res.resolved===true?'#dcfce7':'#fee2e2';
+      const pillText=res.resolved===true?'Resolved':'Still Open';
+      return '<div class="qc qc-collapsed" onclick="toggleSpotCheckCollapse(\''+it.ref+'\')">'
+        +'<span class="bdg" style="background:#334155;color:#fff">'+xH(it.ref)+'</span>'
+        +'<span class="qc-collapsed-text">'+xH(it.question)+'</span>'
+        +'<span class="bdg" style="background:'+pillBg+';color:'+pillColor+';font-weight:800">'+pillText+'</span>'
+        +'<span class="qc-collapsed-chevron">\u25be</span>'
+        +'</div>';
+    }
+
+    return '<div class="na-confirm-item'+(res.resolved===false?' flagged':'')+'"'+(isChecked?' onclick="toggleSpotCheckCollapse(\''+it.ref+'\')" style="cursor:pointer"':'')+'>'
       +'<div class="na-confirm-meta">'+xH(it.ref)+' \u00b7 '+xH(it.section)+'</div>'
       +'<div class="na-confirm-q">'+xH(it.question)+'</div>'
       +(it.criticality?'<div class="na-confirm-reason">'+xH(it.criticality)+'</div>':'')
       +(badge?'<div style="margin:6px 0">'+badge+'</div>':'')
-      +'<div class="na-confirm-btns">'
-      +'<button class="'+(res.resolved===true?'active-yes':'')+'" onclick="setSimpleSpotResolution(\''+it.ref+'\',true)">\u2705 Resolved</button>'
-      +'<button class="'+(res.resolved===false?'active-no':'')+'" onclick="setSimpleSpotResolution(\''+it.ref+'\',false)">\u26a0\ufe0f Still Open</button>'
+      +'<div class="na-confirm-btns" onclick="event.stopPropagation()">'
+      +'<button'+dis+' class="'+(res.resolved===true?'active-yes':'')+'" onclick="setSimpleSpotResolution(\''+it.ref+'\',true)">\u2705 Resolved</button>'
+      +'<button'+dis+' class="'+(res.resolved===false?'active-no':'')+'" onclick="setSimpleSpotResolution(\''+it.ref+'\',false)">\u26a0\ufe0f Still Open</button>'
       +'</div>'
-      +'<input type="text" class="na-goodwill-input" placeholder="Optional note" value="'+xH(res.note||'')+'" oninput="setSimpleSpotNote(\''+it.ref+'\',this.value)">'
+      +'<input'+dis+' type="text" class="na-goodwill-input" placeholder="Optional note" value="'+xH(res.note||'')+'" oninput="setSimpleSpotNote(\''+it.ref+'\',this.value)" onclick="event.stopPropagation()">'
       +'</div>';
   }).join('');
 }
+function toggleSpotCheckCollapse(ref){
+  const res=spotCheckResolutions[ref];
+  const isChecked=res && (res.resolved===true||res.resolved===false);
+  if(!isChecked)return; // never collapse an unreviewed item
+  const currentlyCollapsed=spotCheckCollapseOverride.hasOwnProperty(ref)?spotCheckCollapseOverride[ref]:true;
+  spotCheckCollapseOverride[ref]=!currentlyCollapsed;
+  renderSimpleSpotCheck();
+}
+function spotCheckExpandAll(){
+  const data=continuityDataForLocation();
+  const items=(data&&data.priorFindings)||[];
+  items.forEach(it=>{ spotCheckCollapseOverride[it.ref]=false; });
+  renderSimpleSpotCheck();
+}
+function spotCheckCollapseAll(){
+  const data=continuityDataForLocation();
+  const items=(data&&data.priorFindings)||[];
+  items.forEach(it=>{
+    const res=spotCheckResolutions[it.ref];
+    if(res && (res.resolved===true||res.resolved===false)) spotCheckCollapseOverride[it.ref]=true;
+  });
+  renderSimpleSpotCheck();
+}
+function requestSpotCheckFinalize(){
+  const data=continuityDataForLocation();
+  const items=(data&&data.priorFindings)||[];
+  const checkedCount=items.filter(it=>{
+    const r=spotCheckResolutions[it.ref];
+    return r && (r.resolved===true || r.resolved===false);
+  }).length;
+  if(items.length===0 || checkedCount<items.length)return; // button is disabled in this state anyway — defense in depth
+  spotCheckFinalized=true;
+  syncSimpleSpotSession();
+  renderSimpleSpotCheck();
+}
+function unlockSpotCheckFinalize(){
+  spotCheckFinalized=false;
+  syncSimpleSpotSession();
+  renderSimpleSpotCheck();
+}
 function setSimpleSpotResolution(ref,resolved){
+  if(spotCheckFinalized)return;
   if(!spotCheckResolutions[ref]) spotCheckResolutions[ref]={};
   spotCheckResolutions[ref].resolved=resolved;
   if(resolved===true && !spotCheckResolutions[ref].resolvedDate){
@@ -1245,6 +1546,7 @@ function setSimpleSpotResolution(ref,resolved){
   renderSimpleSpotCheck();
 }
 function setSimpleSpotNote(ref,note){
+  if(spotCheckFinalized)return;
   if(!spotCheckResolutions[ref]) spotCheckResolutions[ref]={};
   spotCheckResolutions[ref].note=note;
   syncSimpleSpotSession();
@@ -1253,6 +1555,8 @@ function syncSimpleSpotSession(){
   const sess=sessions.find(s=>s.id===currentSessionId);
   if(!sess)return;
   sess.spotCheckResolutions={...spotCheckResolutions};
+  sess.spotCheckFinalized=spotCheckFinalized;
+  sess.spotCheckSent=spotCheckSent;
   sess.completedBy=document.getElementById('locby').value;
   sess.quarter=document.getElementById('locqtr').value;
   sess.lastModified=Date.now();
@@ -1275,7 +1579,7 @@ function buildSimpleSpotCheckWorkbookBlob(){
   const s1=[
     ['REGIONAL VP SPOT-CHECK \u2014 ACTION LIST FOLLOW-UP'],
     ['Location ID:',uid,'Location:',loc,'Region:',region,'State:',state],
-    ['Quarter:',qtr,'Completed By:',by,'Following Up On:',(data?data.lastAuditQuarter:'(no prior data)'),'Baseline Used:',continuityBaseline+'%'],
+    ['Quarter:',qtr,'Completed By:',by,'Following Up On:',(data?data.lastAuditQuarter:'(no prior data)')],
     ['Original Audit Date:',(data&&data.lastAuditDate)||''],
     [],
     ['Ref','Section','Question','Criticality','Status','Note','Resolved Date'],
@@ -1306,6 +1610,7 @@ function buildSimpleSpotCheckWorkbookBlob(){
 }
 
 function sendSimpleSpotCheck(){
+  if(!spotCheckFinalized)return; // button is hidden in this state anyway — defense in depth
   const data=continuityDataForLocation();
   const items=(data&&data.priorFindings)||[];
   const resolvedCount=items.filter(it=>spotCheckResolutions[it.ref]&&spotCheckResolutions[it.ref].resolved===true).length;
@@ -1340,14 +1645,24 @@ function sendSimpleSpotCheck(){
     '?cc='+encodeURIComponent(PATRICK_EMAIL)+
     '&subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
   openMailto(mailto);
+
+  spotCheckSent=true;
+  syncSimpleSpotSession();
+  renderMyAudits();
+  alert('✅ Sent! Your Spot-Check results for '+selLoc.name+' have been submitted.\n\nTap "← Back to Setup" below to start your next one — this one will now show as ✅ Sent in your list.');
 }
 
+function updateScrollNavVisibility(show){
+  const el=document.getElementById('scrollNavControl');
+  if(el) el.style.display=show?'flex':'none';
+}
 function backToSetup(){
   if(userRole==='regional_vp' && spotCheckMode) syncSimpleSpotSession();
   else syncCurrentSession();
   document.getElementById('setup-screen').style.display='';
   document.getElementById('audit-screen').style.display='none';
   document.getElementById('simple-spotcheck-screen').style.display='none';
+  updateScrollNavVisibility(false);
   ['pbadge','savebtn','sumbtn','expbtn','emailbtn','finalizebtn','newauditbtn','newbtn','hloc','progress-wrap'].forEach(id=>{
     document.getElementById(id).style.display='none';
   });
@@ -1373,6 +1688,9 @@ function newAudit(){
   Object.keys(nar).forEach(k=>delete nar[k]);
   Object.keys(photos).forEach(k=>delete photos[k]);
   Object.keys(docRequested).forEach(k=>delete docRequested[k]);
+  Object.keys(actionStatus).forEach(k=>delete actionStatus[k]);
+  actionListSentSinceChange=true;
+  initialAuditSent=false;
   sf='All';stf='All';inSum=false;
   document.getElementById('lchip').style.display='none';
   document.getElementById('setup-screen').style.display='';
@@ -1424,6 +1742,9 @@ let continuityMode=false; // when true, this is a Regional VP follow-up check ba
 let userRole='risk_vp'; // 'risk_vp' | 'regional_vp' — controls which modes/features are shown
 const USER_ROLE_KEY='tsc_vp_audit_user_role_v1';
 let spotCheckResolutions={}; // per-session, Regional VP simple Spot-Check only: ref -> {resolved:true/false, note:''}
+let spotCheckFinalized=false; // hard-gates Send Results — must review every item first, can unlock to fix
+let spotCheckCollapseOverride={}; // ref -> true/false, manual override of the default collapse-once-checked behavior
+let spotCheckSent=false; // whether Send Results has succeeded for this session — drives the My Audits status label
 function loadUserRole(){
   try{
     const raw=localStorage.getItem(USER_ROLE_KEY);
@@ -1467,12 +1788,57 @@ function confirmRiskVpPin(){
 function setUserRole(role){
   userRole=role;
   try{ localStorage.setItem(USER_ROLE_KEY, role); }catch(err){}
+  // Spot-Check is now the clearly primary/default path for Regional VP — auto-select it
+  // on switching roles, but only if nothing's already chosen, so this never overrides a
+  // deliberate manual pick (e.g. someone using On-Site as the occasional fallback).
+  if(role==='regional_vp' && !spotCheckMode && !virtualMode && !continuityMode){
+    spotCheckMode=true;
+    const sct=document.getElementById('spotCheckModeToggle');
+    if(sct) sct.checked=true;
+    updateStartBtn();
+  }
   applyRoleUI();
+  renderMyAudits();
+}
+// ── HELP / AUDIT FLOW MODALS — content shown depends on which role is CURRENTLY
+// active, not manually toggled. A Regional VP sees their own Spot-Check-focused
+// guide; Risk VP sees the full-audit guide. Re-checked every time the modal opens,
+// so switching roles and reopening always shows the correct content.
+function openHelpModal(){
+  const isRvp=userRole==='regional_vp';
+  document.getElementById('helpContentRiskVp').style.display=isRvp?'none':'';
+  document.getElementById('helpContentRegionalVp').style.display=isRvp?'':'none';
+  document.getElementById('helpModalTitle').textContent=isRvp?'❓ How to Use — Regional VP':'❓ How to Use — Risk VP';
+  document.getElementById('helpModalSub').textContent=isRvp
+    ?'Your workflow for following up on prior findings.'
+    :'Your workflow for conducting a full audit.';
+  document.getElementById('helpModal').classList.add('open');
+}
+function closeHelpModal(){
+  document.getElementById('helpModal').classList.remove('open');
+}
+function openFlowModal(){
+  const isRvp=userRole==='regional_vp';
+  document.getElementById('flowContentRiskVp').style.display=isRvp?'none':'';
+  document.getElementById('flowContentRegionalVp').style.display=isRvp?'':'none';
+  document.getElementById('flowModalTitle').textContent=isRvp?'🗺️ Audit Flow — Regional VP':'🗺️ Audit Flow — Risk VP';
+  document.getElementById('flowModal').classList.add('open');
+}
+function closeFlowModal(){
+  document.getElementById('flowModal').classList.remove('open');
 }
 function applyRoleUI(){
   const pinRow=document.getElementById('riskVpPinRow');
   if(pinRow) pinRow.style.display='none';
   const isRvp=userRole==='regional_vp';
+  // Action List / Send Action List tracking is Risk-VP-only — Regional VP's role is
+  // strictly verification of Risk VP's findings via Spot-Check, not an independent audit
+  // with its own ongoing status-tracking workflow. If they use On-Site as an occasional
+  // fallback, it's a plain full submission via Send Audit, same as before this feature existed.
+  const albtn=document.getElementById('albtn');
+  if(albtn) albtn.style.display=isRvp?'none':'';
+  const sendActionListBtn=document.getElementById('sendactionlistbtn');
+  if(sendActionListBtn && isRvp) sendActionListBtn.style.display='none';
   const riskBtn=document.getElementById('roleRiskVpBtn');
   const rvpBtn=document.getElementById('roleRegionalVpBtn');
   if(riskBtn) riskBtn.classList.toggle('active', !isRvp);
@@ -1482,6 +1848,15 @@ function applyRoleUI(){
   const infoRow=document.getElementById('virtualTemplateInfoRow');
   if(infoRow) infoRow.style.display=isRvp?'none':'';
   if(isRvp && virtualMode){ virtualMode=false; const vt=document.getElementById('virtualModeToggle'); if(vt) vt.checked=false; }
+  // The card also holds the Spot-Check toggle, which Regional VP genuinely needs — so the
+  // card itself can't be hidden entirely. Instead, retitle it and hide only the parts that
+  // are Risk-VP-specific admin (the question-list export/import config tool).
+  const cardTitle=document.getElementById('virtualAuditCardTitle');
+  if(cardTitle) cardTitle.textContent=isRvp?'🔍 Spot-Check':'🎥 Virtual Audit';
+  const cardSub=document.getElementById('virtualAuditCardSub');
+  if(cardSub) cardSub.style.display=isRvp?'none':'';
+  const exportImportRow=document.getElementById('questionListExportImportRow');
+  if(exportImportRow) exportImportRow.style.display=isRvp?'none':'';
   const notifyBtn=document.getElementById('notifyBtn');
   if(notifyBtn && isRvp) notifyBtn.style.display='none';
   else if(notifyBtn && selLoc) notifyBtn.style.display='';
@@ -1697,6 +2072,10 @@ function updateContinuityLabel(){
 function continuityDataForLocation(){
   if(!continuityPacket||!selLoc)return null;
   return continuityPacket.locations[selLoc.id]||null;
+}
+function continuityDataForLocationById(locId){
+  if(!continuityPacket||!locId)return null;
+  return continuityPacket.locations[locId]||null;
 }
 // Weighted per-section sampling: baseline % adjusted by a multiplier based on that
 // section's historical non-compliance rate (YES/NO only — N/A never factors into this).
@@ -2046,6 +2425,25 @@ function slaDueDateText(criticality, auditDateStr){
 }
 function setA(ref,v){if(finalized)return;ans[ref]===v?delete ans[ref]:ans[ref]=v;delete collapseOverride[ref];render();syncCurrentSession();}
 function setN(ref,v){if(finalized)return;notes[ref]=v;updateProg();syncCurrentSession();}
+function setActionStatus(ref,status){
+  if(!actionStatus[ref]) actionStatus[ref]={status:'Open',note:''};
+  actionStatus[ref].status=status;
+  actionListSentSinceChange=false;
+  if(status==='Resolved' && !actionStatus[ref].resolvedDate){
+    actionStatus[ref].resolvedDate=new Date().toISOString().slice(0,10);
+  }
+  if(status!=='Resolved'){
+    delete actionStatus[ref].resolvedDate;
+  }
+  syncCurrentSession();
+  renderActionListView();
+}
+function setActionNote(ref,note){
+  if(!actionStatus[ref]) actionStatus[ref]={status:'Open',note:''};
+  actionStatus[ref].note=note;
+  actionListSentSinceChange=false;
+  syncCurrentSession();
+}
 function setNR(ref,v){if(finalized)return;nar[ref]=v;updateProg();syncCurrentSession();}
 
 function compressImage(file){
@@ -2104,8 +2502,7 @@ function generateAutoNarrative(){
 
   let tier;
   if(score>=90) tier='Passed \u2014 Excellent';
-  else if(score>=85) tier='Passed \u2014 Satisfactory';
-  else if(score>=80) tier='Passed \u2014 Needs Improvement';
+  else if(score>=85) tier='Passed \u2014 Needs Improvement';
   else tier='Did Not Pass \u2014 Immediate Attention Required';
 
   const locName=selLoc?selLoc.name:'this location';
@@ -2159,6 +2556,11 @@ function cancelFinalize(){
 function confirmFinalize(){
   finalized=true;
   pendingFinalize=false;
+  // Seed action list entries for every NO item that doesn't have one yet
+  activeQs().filter(q=>ans[q.ref]==='NO').forEach(q=>{
+    if(!actionStatus[q.ref]) actionStatus[q.ref]={status:'Open',note:''};
+  });
+  updateSendActionListBtnAppearance();
   const autoSummary=generateAutoNarrative();
   const nb=document.getElementById('narrativeBox');
   const existingFull=(nb.value||'').trim();
@@ -2272,6 +2674,50 @@ function toggleSum(){
   document.getElementById('sumbtn').textContent=inSum?'\u2190 Back':'\ud83d\udcca Summary';
   if(inSum)renderSum();
 }
+let inActionListView=false;
+function toggleActionListView(){
+  if(userRole==='regional_vp')return; // Risk-VP-only feature
+  inActionListView=!inActionListView;
+  document.getElementById('formpane').style.display=inActionListView?'none':'';
+  document.getElementById('sumpane').style.display='none';
+  document.getElementById('actionlistpane').style.display=inActionListView?'':'none';
+  document.getElementById('filterbar').style.display=inActionListView?'none':'';
+  document.getElementById('secpanel').style.display=inActionListView?'none':'';
+  document.querySelector('.exprow').style.display=inActionListView?'none':'';
+  document.getElementById('albtn').textContent=inActionListView?'\u2190 Back':'\ud83d\udccb Action List';
+  if(inActionListView)renderActionListView();
+}
+function renderActionListView(){
+  const qs=activeQs().filter(q=>ans[q.ref]==='NO');
+  const pane=document.getElementById('actionlistpane');
+  if(!qs.length){
+    pane.innerHTML='<div style="text-align:center;padding:36px;color:#94a3b8;background:#fff;border-radius:10px">No NO findings on this audit \u2014 nothing to track.</div>';
+    return;
+  }
+  const order={'Open':0,'In Progress':1,'Resolved':2};
+  const sorted=[...qs].sort((a,b)=>{
+    const sa=(actionStatus[a.ref]||{}).status||'Open', sb=(actionStatus[b.ref]||{}).status||'Open';
+    return order[sa]-order[sb];
+  });
+  const auditDateRaw=document.getElementById('locdate')?.value||'';
+  pane.innerHTML='<div class="sumcard" style="margin-bottom:12px"><h2 style="font-size:15px">\ud83d\udccb Action List</h2>'
+    +'<div class="sub">Track remediation here \u2014 this does not change the original audit answers. Target timeframes: Critical 2 weeks, High 3 weeks, Medium 4 weeks from the audit date.</div></div>'
+    +sorted.map(q=>{
+      const st=actionStatus[q.ref]||{status:'Open',note:''};
+      const badge=st.status==='Resolved'?'<span class="sla-badge sla-done">\u2705 Resolved</span>':slaBadgeHtml(q.criticality, auditDateRaw);
+      return '<div class="sumcard" style="margin-bottom:10px;border-left:4px solid '+(st.status==='Resolved'?'#15803d':st.status==='In Progress'?'#d97706':'#dc2626')+'">'
+        +'<div style="font-size:11px;color:#64748b;margin-bottom:4px">'+xH(q.ref)+' \u00b7 '+xH(q.section)+' \u00b7 '+q.criticality+'</div>'
+        +'<div style="font-size:13px;font-weight:600;margin-bottom:6px">'+xH(q.question)+'</div>'
+        +(notes[q.ref]?'<div style="font-size:12px;color:#64748b;font-style:italic;margin-bottom:6px">Original note: '+xH(notes[q.ref])+'</div>':'')
+        +'<div style="margin:6px 0">'+badge+'</div>'
+        +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">'
+        +'<select onchange="setActionStatus(\''+q.ref+'\',this.value)" style="border:1.5px solid #e2e8f0;border-radius:6px;padding:5px 9px;font-size:12px">'
+        +['Open','In Progress','Resolved'].map(s=>'<option value="'+s+'"'+(st.status===s?' selected':'')+'>'+s+'</option>').join('')
+        +'</select>'
+        +'<input type="text" placeholder="Resolution note (optional)" value="'+xH(st.note||'')+'" oninput="setActionNote(\''+q.ref+'\',this.value)" style="flex:1;min-width:150px;border:1.5px solid #e2e8f0;border-radius:6px;padding:5px 9px;font-size:12px">'
+        +'</div></div>';
+    }).join('');
+}
 function renderSum(){
   const qs=activeQs();
   const yes=qs.filter(q=>ans[q.ref]==='YES').length;
@@ -2279,7 +2725,7 @@ function renderSum(){
   const na=qs.filter(q=>ans[q.ref]==='N/A').length;
   const answered=yes+no+na,tot=qs.length;
   const score=(yes+no)>0?Math.round(yes/(yes+no)*100):0;
-  const sc=score>=90?'#4ade80':score>=70?'#fbbf24':'#f87171';
+  const sc=score>=90?'#4ade80':score>=85?'#fbbf24':'#f87171';
   const by=document.getElementById('locby').value;
   const mgr=document.getElementById('locmgr').value;
   const accompany=document.getElementById('locaccompany').value;
@@ -2603,19 +3049,6 @@ function doExport(){
 
 // ── EMAIL ──
 const RVP_NAMES=[...new Set(LOCATIONS.map(l=>l.rvp).filter(Boolean))].sort();
-const SVP_CC_KEY='tsc_vp_audit_cc_email_v1';
-let svpCcEmail='';
-function loadSvpCcEmail(){
-  try{
-    svpCcEmail=localStorage.getItem(SVP_CC_KEY)||'';
-  }catch(err){ svpCcEmail=''; }
-  const el=document.getElementById('svpCcInput');
-  if(el) el.value=svpCcEmail;
-}
-function saveSvpCcEmail(){
-  svpCcEmail=document.getElementById('svpCcInput').value.trim();
-  try{ localStorage.setItem(SVP_CC_KEY, svpCcEmail); }catch(err){}
-}
 
 function guessEmail(name){
   const parts=name.trim().toLowerCase().split(/\s+/);
@@ -2688,6 +3121,12 @@ function buildNotifyMessage(){
       '\u2022 ['+q.ref+'] '+q.question+(notes[q.ref]?' \u2014 '+notes[q.ref]:'')
     ).join('\n');
   }
+  if(emailMode==='actionlist' && noItems.length){
+    actionList='\n\nAction Items ('+noItems.length+'):\n'+noItems.map(q=>{
+      const st=actionStatus[q.ref]||{status:'Open',note:''};
+      return '\u2022 ['+q.ref+'] '+q.question+' \u2014 Status: '+st.status+(st.note?' \u2014 '+st.note:'');
+    }).join('\n');
+  }
 
   const docItems=qs.filter(q=>docRequiredRefs.has(q.ref));
   let docRequestList='';
@@ -2697,29 +3136,39 @@ function buildNotifyMessage(){
     ).join('\n');
   }
 
-  const subject='VP of Risk & Safety Audit \u2014 '+locName+' ('+qtr+')'+(virtualMode?' [VIRTUAL]':spotCheckMode?' [SPOT-CHECK]':continuityMode?' [CONTINUITY CHECK]':'');
-  const body=
-'VP Risk Audit completed for '+locName+'.\n\n'+
-(virtualMode?'Audit Type: \ud83c\udfa5 Virtual (Video Call)\n':spotCheckMode?'Audit Type: \ud83d\udd0d Spot-Check (In-Person, quick visit)\n':continuityMode?'Audit Type: \ud83d\udd17 Continuity Check (In-Person, baseline '+continuityBaseline+'%)\n':'')+
-'Date of Audit: '+auditDate+'\n'+
-'Quarter: '+qtr+'\n'+
-'Completed By: '+by+'\n'+
-'Location Manager: '+mgr+'\n'+
-'Accompanied By: '+accompany+'\n'+
-'Regional VP: '+rvpName+'\n\n'+
-'Compliance Score: '+score+'%\n'+
-'YES: '+yes+'   NO: '+no+'   N/A: '+na+
-(narrative?'\n\nVP Comments:\n'+narrative:'')+
-(docNotes?'\n\nDocumentation to Review Separately:\n'+docNotes:'')+
-actionList+
-docRequestList+
-'\n\n\u2014\u2014\u2014\nThe completed Excel workbook has been downloaded to this device \u2014 please attach it to this email before sending.';
+  const subject=(emailMode==='actionlist'
+    ? 'VP Risk Audit \u2014 Action List Update \u2014 '+locName+' ('+qtr+')'
+    : 'VP of Risk & Safety Audit \u2014 '+locName+' ('+qtr+')'+(virtualMode?' [VIRTUAL]':spotCheckMode?' [SPOT-CHECK]':continuityMode?' [CONTINUITY CHECK]':''));
+  const body=(emailMode==='actionlist'
+    ? 'Action List status update for a previously submitted VP Risk Audit.\n\n'+
+      'Location: '+locName+'\n'+
+      'Quarter: '+qtr+'\n'+
+      'Completed By: '+by+'\n'+
+      'Regional VP: '+rvpName+
+      actionList+
+      '\n\n\u2014\u2014\u2014\nThe completed Excel workbook has been downloaded to this device \u2014 please attach it to this email before sending. This replaces the Action List status from the prior submission; the original audit answers and score are unchanged.'
+    : 'VP Risk Audit completed for '+locName+'.\n\n'+
+      (virtualMode?'Audit Type: \ud83c\udfa5 Virtual (Video Call)\n':spotCheckMode?'Audit Type: \ud83d\udd0d Spot-Check (In-Person, quick visit)\n':continuityMode?'Audit Type: \ud83d\udd17 Continuity Check (In-Person, baseline '+continuityBaseline+'%)\n':'')+
+      'Date of Audit: '+auditDate+'\n'+
+      'Quarter: '+qtr+'\n'+
+      'Completed By: '+by+'\n'+
+      'Location Manager: '+mgr+'\n'+
+      'Accompanied By: '+accompany+'\n'+
+      'Regional VP: '+rvpName+'\n\n'+
+      'Compliance Score: '+score+'%\n'+
+      'YES: '+yes+'   NO: '+no+'   N/A: '+na+
+      (narrative?'\n\nVP Comments:\n'+narrative:'')+
+      (docNotes?'\n\nDocumentation to Review Separately:\n'+docNotes:'')+
+      actionList+
+      docRequestList+
+      '\n\n\u2014\u2014\u2014\nThe completed Excel workbook has been downloaded to this device \u2014 please attach it to this email before sending.');
 
   return {subject,body};
 }
 
-function sendAudit(){
+function sendAudit(mode){
   if(!selLoc){ alert('Select a location first.'); return; }
+  emailMode=mode||'audit';
   try{
     const {subject,body}=buildNotifyMessage();
     const {blob,filename}=buildWorkbookBlob();
@@ -2737,23 +3186,54 @@ function sendAudit(){
     if(mgrName) toEmails.push(guessEmail(mgrName));
     if(selLoc.rvp) toEmails.push(guessEmail(selLoc.rvp));
     if(!toEmails.length){ alert('No Location Manager or Regional VP on file for this location — add an email manually once your mail app opens.'); }
-    if(!svpCcEmail){ alert('No "Always CC" address set yet — add it once under Send Settings on the setup screen, or add it manually once your mail app opens.'); }
 
-    const mailtoParams='?'+(svpCcEmail?'cc='+encodeURIComponent(svpCcEmail)+'&':'')+
-      'subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    const mailtoParams='?cc='+encodeURIComponent(PATRICK_EMAIL)+
+      '&subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
     const mailto='mailto:'+encodeURIComponent(toEmails.join(','))+mailtoParams;
     setTimeout(()=>openMailto(mailto),400);
     setTimeout(()=>showFreeSpacePrompt(),1200);
+
+    actionListSentSinceChange=true;
+    if(emailMode==='audit') initialAuditSent=true;
+    syncCurrentSession();
+    updateSendActionListBtnAppearance();
   }catch(err){
     syncCurrentSession();
     alert('Send failed, but your progress is saved. Try again, or remove a photo if the audit has many attached.\n\n('+err.message+')');
   }
 }
+function requestSendActionList(){
+  if(userRole==='regional_vp')return; // Risk-VP-only feature
+  if(!initialAuditSent){
+    alert('⚠️ You need to send your initial audit first.\n\nTap "✉️ Send Audit" to submit your completed assessment. Once that\'s sent, "📋 Send Action List" will be available for future status updates.');
+    return;
+  }
+  sendAudit('actionlist');
+}
+function updateSendActionListBtnAppearance(){
+  const btn=document.getElementById('sendactionlistbtn');
+  if(!btn)return;
+  // Risk-VP-only feature — see the note in applyRoleUI() for why. Checked here too since
+  // this function gets called from several places (finalize, startAudit) independently.
+  if(userRole==='regional_vp'){ btn.style.display='none'; return; }
+  const hasItems=Object.keys(actionStatus).length>0;
+  btn.style.display=hasItems?'':'none';
+  if(!hasItems)return;
+  if(!initialAuditSent){
+    btn.textContent='🔒 Send Action List';
+    btn.style.background='#94a3b8';
+    btn.title='Send your initial audit first (✉️ Send Audit) — tap for details';
+  } else {
+    btn.textContent='📋 Send Action List';
+    btn.style.background='#7e22ce';
+    btn.title='Send just an Action List status update';
+  }
+}
+
 
 // init
 checkStorageHealthOnLoad();
 loadPersistedSessions();
-loadSvpCcEmail();
 loadVirtualSettings();
 loadContinuitySettings();
 loadUserRole();
