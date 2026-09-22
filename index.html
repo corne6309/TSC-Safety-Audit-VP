@@ -827,15 +827,20 @@ function updateLocationCheckUI(){
   if(!locationCheck || virtualMode){ el.style.display='none'; return; }
   el.style.display='';
   const map={
-    checking:{bg:'#f1f5f9',color:'#64748b',text:'\u23f3 Checking location\u2026'},
-    confirmed:{bg:'#dcfce7',color:'#15803d',text:'\u2705 Location confirmed ('+locationCheck.distanceMiles+' mi from site)'},
-    flagged:{bg:'#fee2e2',color:'#b91c1c',text:'\u26a0\ufe0f '+locationCheck.distanceMiles+' mi from site \u2014 recorded on the audit'},
-    not_configured:{bg:'#f1f5f9',color:'#64748b',text:'\ud83d\udccd GPS captured (no site address on file yet)'},
-    denied:{bg:'#fef3c7',color:'#92400e',text:'\u26a0\ufe0f Location not shared \u2014 recorded on the audit'},
-    unavailable:{bg:'#f1f5f9',color:'#64748b',text:'\ud83d\udccd Location services unavailable on this device'}
+    checking:{bg:'#f1f5f9',color:'#64748b',text:'\u23f3 Checking location\u2026',retry:false},
+    confirmed:{bg:'#dcfce7',color:'#15803d',text:'\u2705 Location confirmed ('+locationCheck.distanceMiles+' mi from site)',retry:true},
+    flagged:{bg:'#fee2e2',color:'#b91c1c',text:'\u26a0\ufe0f '+locationCheck.distanceMiles+' mi from site \u2014 recorded on the audit',retry:true},
+    not_configured:{bg:'#f1f5f9',color:'#64748b',text:'\ud83d\udccd GPS captured (no site address on file yet)',retry:true},
+    denied:{bg:'#fef3c7',color:'#92400e',text:'\u26a0\ufe0f Location not shared \u2014 recorded on the audit',retry:true},
+    unavailable:{bg:'#f1f5f9',color:'#64748b',text:'\ud83d\udccd Location services unavailable on this device',retry:true}
   };
   const m=map[locationCheck.status]||map.unavailable;
-  el.style.background=m.bg; el.style.color=m.color; el.textContent=m.text;
+  el.style.background=m.bg; el.style.color=m.color;
+  // A retry option matters here: capture only ever runs automatically once per session, so if
+  // permission was denied (or just not granted yet) the first time, there was previously no way
+  // to try again after fixing that — even though the badge would keep showing the stale failure
+  // state indefinitely, regardless of what the browser's actual permission now allows.
+  el.innerHTML = xH(m.text) + (m.retry ? ' <button onclick="captureLocationCheck()" style="margin-left:8px;border:none;border-radius:6px;padding:2px 9px;font-size:11px;font-weight:700;cursor:pointer;background:rgba(0,0,0,.08);color:inherit">\ud83d\udd04 Retry</button>' : '');
   updateGpsStatusBadge();
 }
 let pendingFinalize=false;
