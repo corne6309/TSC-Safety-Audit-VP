@@ -310,6 +310,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <span id="netStatusBadge" style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;white-space:nowrap"></span>
       <button class="btn btn-slate" onclick="openHelpModal()" style="background:#0e7490">❓ How to Use</button>
       <button class="btn btn-slate" onclick="openFlowModal()" style="background:#7e22ce">🗺️ Audit Flow</button>
+      <button class="btn btn-slate" onclick="hardRefresh()" style="background:#334155">🔄 Refresh</button>
       <span id="gpsStatusBadge" style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;white-space:nowrap;display:none"></span>
       <span class="pbadge" id="pbadge" style="color:#f59e0b;display:none">0/0</span>
       <span id="saveIndicator" style="font-size:11px;font-weight:700;color:#4ade80;opacity:0;transition:opacity .3s;white-space:nowrap">✓ Saved</span>
@@ -2728,6 +2729,16 @@ function setTextZoom(level){
   document.getElementById(btnId).classList.add('active');
 }
 
+function hardRefresh(){
+  // Unlike Leadership Dashboard (read-only, no state to protect), this tool can have an
+  // active audit session in progress. Answers autosave continuously, so a refresh shouldn't
+  // actually lose anything — but navigating away unannounced mid-audit would still be a
+  // jarring surprise, so this confirms first only when there's something active to interrupt.
+  if(currentSessionId){
+    if(!confirm('You have an audit in progress. Your answers are saved automatically, so nothing should be lost \u2014 refresh now to get the latest version of this tool?')) return;
+  }
+  location.href=location.pathname+'?refresh='+Date.now();
+}
 function toggleHeaderMenu(){
   document.getElementById('actionMenu').classList.toggle('open');
 }
