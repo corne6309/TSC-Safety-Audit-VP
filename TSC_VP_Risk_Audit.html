@@ -389,7 +389,7 @@ select{background:var(--bg-surface);color:var(--text-primary)}
   </div>
   <div class="scard">
     <h2>👤 Who's Using This</h2>
-    <div class="sub">Regional VPs get a lighter-weight view — no Virtual Audit option, and Spot-Check becomes a quick action-list check instead of a full audit.</div>
+    <div class="sub">Regional VPs get a lighter-weight view — Spot-Check only: verify the Risk VP's findings, or take a short first look at sites the Risk VP hasn't audited yet.</div>
     <div style="display:flex;gap:8px">
       <button id="roleRiskVpBtn" class="role-btn active" onclick="requestRiskVpAccess()" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-surface);font-size:13px;font-weight:700;cursor:pointer">Risk VP</button>
       <button id="roleRegionalVpBtn" class="role-btn" onclick="setUserRole('regional_vp')" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-surface);font-size:13px;font-weight:700;cursor:pointer">Regional VP</button>
@@ -438,7 +438,7 @@ select{background:var(--bg-surface);color:var(--text-primary)}
     </div>
     <button id="notifyBtn" onclick="openNotifyModal()" style="display:none;width:100%;margin-top:10px;background:#0e7490;color:#fff;border:none;border-radius:8px;padding:10px;font-size:12.5px;font-weight:700;cursor:pointer">📧 Notify Manager Before Audit</button>
     <div class="mrow">
-      <div class="mfield"><label for="locby">Completed By</label><input type="text" id="locby" value="Corné Wolmarans" placeholder="Name / Title"></div>
+      <div class="mfield"><label for="locby">Completed By</label><input type="text" id="locby" value="" placeholder="Name / Title"></div>
       <div class="mfield" style="max-width:150px"><label for="locdate">Date of Audit</label><input type="date" id="locdate"></div>
       <div class="mfield" style="max-width:130px"><label for="locqtr">Quarter</label>
         <select id="locqtr"><option>Q1 2026</option><option>Q2 2026</option><option selected>Q3 2026</option><option>Q4 2026</option><option>Q1 2027</option></select>
@@ -469,15 +469,16 @@ select{background:var(--bg-surface);color:var(--text-primary)}
       <input type="checkbox" id="virtualModeToggle" onchange="virtualMode=this.checked;if(virtualMode){spotCheckMode=false;continuityMode=false;siteWalkMode=false;document.getElementById('spotCheckModeToggle').checked=false;document.getElementById('continuityModeToggle').checked=false;document.getElementById('siteWalkModeToggle').checked=false;}updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
       <span style="font-size:13px;font-weight:600">This is a virtual audit (video call)</span>
     </label>
-    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;margin-bottom:10px">
+    <label id="spotCheckModeLabel" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;margin-bottom:10px">
       <input type="checkbox" id="spotCheckModeToggle" onchange="spotCheckMode=this.checked;if(spotCheckMode){virtualMode=false;continuityMode=false;siteWalkMode=false;document.getElementById('virtualModeToggle').checked=false;document.getElementById('continuityModeToggle').checked=false;document.getElementById('siteWalkModeToggle').checked=false;}updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
       <span style="font-size:13px;font-weight:600">🔍 This is a quick in-person spot-check (not a full audit)</span>
     </label>
     <label id="siteWalkModeLabel" style="display:none;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;margin-bottom:10px">
       <input type="checkbox" id="siteWalkModeToggle" onchange="siteWalkMode=this.checked;if(siteWalkMode){virtualMode=false;spotCheckMode=false;continuityMode=false;document.getElementById('virtualModeToggle').checked=false;document.getElementById('spotCheckModeToggle').checked=false;document.getElementById('continuityModeToggle').checked=false;}updateStartBtn();" style="width:20px;height:20px;cursor:pointer">
-      <span style="font-size:13px;font-weight:600">🚶 This is a Site Walk-Through (no Risk VP audit on file yet)</span>
+      <span style="font-size:13px;font-weight:600">🔍 First look (no Risk VP audit on file yet)</span>
     </label>
-    <div class="sub" id="siteWalkDescLabel" style="display:none;margin-bottom:8px">For locations you don't have Risk VP findings to Spot-Check against — same reduced question set as Virtual, answered in person during your visit.</div>
+    <div class="sub" id="siteWalkDescLabel" style="display:none;margin-bottom:8px">A short in-person question list for sites the Risk VP hasn't audited yet.</div>
+    <div id="rvpBasisPanel" style="display:none;margin-bottom:10px"></div>
     <div id="continuityPacketStatusForRvp" style="display:none;font-size:12px;font-weight:600;padding:8px 10px;border-radius:8px;margin-bottom:10px"></div>
     <div class="sub" id="spotCheckDescLabel" style="margin-bottom:8px">For a quick in-person visit — same reduced question set as Virtual, not a full audit.</div>
     <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px" id="virtualTemplateInfoRow">Virtual template: <span id="virtualCountLabel">54</span> of <span id="virtualTotalLabel">199</span> total questions selected (across all sections) — used for both Virtual Audits and Spot-Checks. The number on the Start button below reflects only what applies to the location you've picked</div>
@@ -652,10 +653,10 @@ select{background:var(--bg-surface);color:var(--text-primary)}
       </div>
 
       <div id="helpContentRegionalVp">
-        <div class="help-tip" style="background:var(--status-info-bg);border-left-color:var(--status-info-text);color:var(--status-info-text);font-weight:600">🎯 Your role is verification. The Risk VP conducts the full independent audit — your job is confirming their findings actually get fixed. Spot-Check is how you do that, and it's the option you'll use almost every time.</div>
+        <div class="help-tip" style="background:var(--status-info-bg);border-left-color:var(--status-info-text);color:var(--status-info-text);font-weight:600">🎯 Your role is verification. The Risk VP conducts the full independent audit — your job is confirming their findings actually get fixed, and getting an early look at sites the Risk VP hasn't reached yet. Both are done through Spot-Check — the app picks the right one for each site.</div>
 
         <div class="help-section-title">🔍 Spot-Check — Your Primary Workflow</div>
-        <div class="help-step-text" style="margin-bottom:10px">Spot-Check is <strong>not</strong> a new audit — it's a focused follow-up on the Risk VP's <strong>prior findings</strong> at that location. It loads automatically once you pick the location — nothing to import.</div>
+        <div class="help-step-text" style="margin-bottom:10px">Spot-Check is <strong>not</strong> a new audit — it's a focused follow-up on the Risk VP's <strong>prior findings</strong> at that location. It loads automatically once you pick the location — nothing to import. If the Risk VP hasn't audited that site yet, you'll get a short <strong>first look</strong> instead (see below).</div>
         <div class="help-step"><div class="help-step-num">1</div><div class="help-step-text"><strong>Pick your name from the Regional VP list, then a location.</strong> Spot-Check is selected automatically — this shortens the location list to just your own region.</div></div>
         <div class="help-step"><div class="help-step-num">2</div><div class="help-step-text">You'll see each finding the Risk VP previously flagged, with a colored badge showing urgency (🟢 on track / 🟡 due soon / 🔴 overdue) based on when it was originally flagged — not today's date.</div></div>
         <div class="help-step"><div class="help-step-num">3</div><div class="help-step-text">For each one, tap <strong>"✅ Resolved"</strong> or <strong>"⚠️ Still Open"</strong>. Add a quick note if useful.</div></div>
@@ -663,6 +664,14 @@ select{background:var(--bg-surface);color:var(--text-primary)}
         <div class="help-step"><div class="help-step-num">5</div><div class="help-step-text">Tap <strong>"Send Results,"</strong> now available after finalizing. This downloads a small Excel file and opens an email addressed to <strong>the Risk VP and Patrick</strong> — not to you. Attach the file before sending.</div></div>
         <div class="help-tip">✅ Once sent, tap <strong>"← Back to Setup"</strong> — that's it, you're done with this location. It'll show as <strong>"✅ Sent"</strong> in "My Audits" (instead of a % complete) so it's clear this one's finished, not still outstanding. It stays in your list for reference — delete it whenever you're ready, there's no rush.</div>
         <div class="help-tip">💡 Spot-Check is intentionally lightweight — no full question set, no new findings of your own. It's purely "here's what changed since the last visit." This shortens your time on-site and keeps everyone focused on getting the Risk VP's findings actually resolved.</div>
+
+        <div class="help-section-title">🔍 Spot-Check — First Look (no Risk VP audit yet)</div>
+        <div class="help-step-text" style="margin-bottom:10px">When the Risk VP hasn't audited a site yet, Spot-Check opens as a <strong>first look</strong>: a short list of the most important safety questions, answered in person during your visit. The card at the top tells you which kind you've got.</div>
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-text"><strong>Pick your name, then the location.</strong> The card says "Spot-Check — first look" and how many questions apply to that site.</div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-text">Answer <strong>Yes / No / N/A</strong> for each question while you're on site (a No needs a short note). Progress saves automatically — pick up later any time this quarter.</div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-text">Tap <strong>Finalize</strong>, then <strong>Excel</strong> and <strong>Send Audit</strong> (to the Risk VP and Patrick). There's no Action List — your findings go to the Risk VP, who tracks them.</div></div>
+        <div class="help-tip">ℹ️ A first look isn't a full audit and doesn't replace the Risk VP's. It's scored on its own, so it never mixes with the Risk VP's results.</div>
+        <div class="help-tip">⚠️ If the app says it can't confirm whether the Risk VP has audited a site, tap <strong>Retry</strong> first. Only start a first look anyway if you're sure the Risk VP hasn't been there — it's flagged as unverified.</div>
 
         <div class="help-section-title">📋 On-Site — Occasional Fallback Only</div>
         <div class="help-step-text" style="margin-bottom:10px">On-Site is a full audit, available if you genuinely need one — but it's not your typical workflow. If you use it, it works like a standard full audit: answer every question, Finalize, then Excel and Send Audit. It does <strong>not</strong> have its own ongoing Action List tracking — that capability is reserved for the Risk VP's own audits, since your role is verification via Spot-Check, not running a second independent audit.</div>
@@ -717,6 +726,16 @@ select{background:var(--bg-surface);color:var(--text-primary)}
         <div class="flow-arrow">↓</div>
         <div class="flow-step" style="background:#f3e8ff;color:#6b21a8">5. Send Results <div class="fs-sub">to Risk VP + Patrick</div></div>
         <div class="flow-note">Verification, not a new audit — this is your role</div>
+
+        <div class="flow-section-title">First look — where the Risk VP hasn't been yet</div>
+        <div class="flow-step" style="background:var(--bg-chip);color:var(--text-secondary)">1. Pick your name, then location</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#ccfbf1;color:#115e59">2. "Spot-Check — first look" <div class="fs-sub">short question list, chosen for you</div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:var(--bg-chip);color:var(--text-secondary)">3. Answer Yes / No / N/A on site</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="background:#ccfbf1;color:#0f766e">4. Finalize, Excel + Send Audit <div class="fs-sub">To Risk VP + Patrick</div></div>
+        <div class="flow-note">Scored on its own — separate from the Risk VP's audit</div>
 
         <div class="flow-section-title">On-Site — occasional fallback only</div>
         <div class="flow-step" style="background:var(--bg-chip);color:var(--text-secondary)">1. Pick your name, then location</div>
@@ -991,7 +1010,8 @@ function sessionProgress(sess){
   // would understate their progress, since most of those questions never apply to them.
   let activeQsForSess=QUESTIONS.filter(q=>sess.actSec.includes(q.section));
   if(sess.virtualMode||sess.siteWalkMode){
-    activeQsForSess=activeQsForSess.filter(q=>virtualIncludedRefs.has(q.ref));
+    const reducedSet=sess.siteWalkMode?firstLookRefs:virtualIncludedRefs;
+    activeQsForSess=activeQsForSess.filter(q=>reducedSet.has(q.ref));
   }
   const answered=activeQsForSess.filter(q=>sess.ans[q.ref]).length;
   const tot=activeQsForSess.length;
@@ -1013,6 +1033,7 @@ function snapshotWorkingState(){
     nar:{...nar},
     photos:Object.fromEntries(Object.entries(photos).map(([k,v])=>[k,v.map(p=>({...p}))])),
     docRequested:{...docRequested},
+    firstLookBasis,
     photoPolicy,
     narrative:(document.getElementById('narrativeBox')?.value)||'',
     docNotes:(document.getElementById('docNotesBox')?.value)||'',
@@ -1131,6 +1152,7 @@ function loadSessionIntoWorkingState(sess){
   spotCheckMode=!!sess.spotCheckMode;
   siteWalkMode=!!sess.siteWalkMode;
   continuityMode=!!sess.continuityMode;
+  firstLookBasis=sess.firstLookBasis||'';
   Object.keys(naConfirmations).forEach(k=>delete naConfirmations[k]); Object.assign(naConfirmations,sess.naConfirmations||{});
   Object.keys(actionStatus).forEach(k=>delete actionStatus[k]); Object.assign(actionStatus,sess.actionStatus||{});
   actionListSentSinceChange=sess.actionListSentSinceChange!==undefined?!!sess.actionListSentSinceChange:true;
@@ -1149,6 +1171,7 @@ function resumeSession(id){
   document.getElementById('locmgr').value=sess.locationManager||(selLoc?selLoc.manager:'')||'';
   document.getElementById('locaccompany').value=sess.accompaniedBy||'';
   document.getElementById('locdate').value=sess.auditDate||new Date().toISOString().slice(0,10);
+  ensureQuarterOptionVP(sess.quarter||'Q3 2026');
   document.getElementById('locqtr').value=sess.quarter||'Q3 2026';
   startAudit(true);
   // narrativeBox is inside audit-screen which only exists after startAudit renders it into DOM structure (it's static HTML, always present) — set after transition
@@ -1306,15 +1329,10 @@ function pickLoc(i){
     document.getElementById('locmgr').value=selLoc.manager||'';
     document.getElementById('locaccompany').value='';
     virtualMode=false;
-    // Spot-Check (against the Risk VP's own prior findings) is the priority default for a
-    // fresh Regional VP location pick whenever that data actually exists for this location.
-    // If it doesn't — no Risk VP audit on file yet to check against — fall back to
-    // Site Walk-Through instead, so Regional VP still has something meaningful to do here
-    // rather than nothing. Either way, this is only ever a starting default; a deliberate
-    // manual toggle change always overrides it.
-    const hasPriorFindings = !!(continuityDataForLocationById(selLoc.id) && continuityDataForLocationById(selLoc.id).priorFindings && continuityDataForLocationById(selLoc.id).priorFindings.length);
-    spotCheckMode = (userRole==='regional_vp') && hasPriorFindings;
-    siteWalkMode = (userRole==='regional_vp') && !hasPriorFindings;
+    // For a Regional VP the kind of Spot-Check (verify vs first look) is decided by
+    // applyRvpBasis() below, once the published Risk VP data has actually been consulted.
+    spotCheckMode=false;
+    siteWalkMode=false;
     continuityMode=false;
     locationCheck=null;
     document.getElementById('virtualModeToggle').checked=false;
@@ -1328,10 +1346,13 @@ function pickLoc(i){
     Object.keys(nar).forEach(k=>delete nar[k]);
     Object.keys(photos).forEach(k=>delete photos[k]);
   }
+  rvpUnverifiedAck=false; rvpFullAudit=false;
+  applyRvpBasis();
   renderSetup();updateStartBtn();
 }
 function clearLoc(){
   selLoc=null;
+  rvpBasis=null; rvpUnverifiedAck=false; rvpFullAudit=false; rvpAutoSet=false;
   document.getElementById('lchip').style.display='none';
   document.getElementById('siteProfileRow').style.display='none';
   document.getElementById('lcAddressRow').style.display='none';
@@ -1356,6 +1377,7 @@ function clearLoc(){
   Object.keys(notes).forEach(k=>delete notes[k]);
   Object.keys(nar).forEach(k=>delete nar[k]);
   Object.keys(photos).forEach(k=>delete photos[k]);
+  renderRvpBasisPanel();
   renderSetup();updateStartBtn();
 }
 
@@ -1374,29 +1396,45 @@ function renderSetup(){
 function toggleSS(s){actSec.has(s)?actSec.delete(s):actSec.add(s);renderSetup();updateStartBtn();}
 function updateStartBtn(){
   const btn=document.getElementById('startbtn');
-  if(selLoc){
-    const existing=findSessionForLocation(selLoc.id, selLoc.name);
-    const totFull=[...actSec].reduce((s,k)=>s+(SQCOUNT[k]||0),0);
-    const totReduced=QUESTIONS.filter(q=>actSec.has(q.section)&&virtualIncludedRefs.has(q.ref)).length;
-    const totContinuity=continuityMode?continuityIncludedRefs().size:0;
-    const tot=continuityMode?totContinuity:(virtualMode||spotCheckMode||siteWalkMode)?totReduced:totFull;
-    const modeLabel=virtualMode?' for this location (Virtual)':spotCheckMode?' for this location (Spot-Check)':continuityMode?' for this location (Continuity Check)':siteWalkMode?' for this location (Site Walk-Through)':'';
-    if(existing){
-      btn.disabled=false;
-      const pct=sessionProgress(existing);
-      btn.textContent='Resume Audit \u2014 '+pct+'% complete \u2192';
-    } else if(sessionsForCurrentRole().length>=MAX_SESSIONS){
-      btn.disabled=true;
-      btn.textContent='\u26a0\ufe0f '+MAX_SESSIONS+' audits in progress \u2014 resume or delete one first';
-    } else {
-      btn.disabled=false;
-      btn.textContent='Start Audit \u2014 '+tot+' questions'+modeLabel+' \u2192';
-    }
-  } else {btn.disabled=true;btn.textContent='Select a location to begin \u2192';}
+  if(!selLoc){btn.disabled=true;btn.textContent='Select a location to begin \u2192';return;}
+  const existing=findSessionForLocation(selLoc.id, selLoc.name);
+  const totFull=[...actSec].reduce((s,k)=>s+(SQCOUNT[k]||0),0);
+  const reducedSet=siteWalkMode?firstLookRefs:virtualIncludedRefs;
+  const totReduced=QUESTIONS.filter(q=>actSec.has(q.section)&&reducedSet.has(q.ref)).length;
+  const totContinuity=continuityMode?continuityIncludedRefs().size:0;
+  const tot=continuityMode?totContinuity:(virtualMode||spotCheckMode||siteWalkMode)?totReduced:totFull;
+  const modeLabel=virtualMode?' for this location (Virtual)':spotCheckMode?' for this location (Spot-Check)':continuityMode?' for this location (Continuity Check)':'';
+  const isRvp=userRole==='regional_vp';
+  renderRvpBasisPanel();
+  if(existing){
+    btn.disabled=false;
+    const pct=sessionProgress(existing);
+    btn.textContent='Resume Audit \u2014 '+pct+'% complete \u2192';
+  } else if(sessionsForCurrentRole().length>=MAX_SESSIONS){
+    btn.disabled=true;
+    btn.textContent='\u26a0\ufe0f '+MAX_SESSIONS+' audits in progress \u2014 resume or delete one first';
+  } else if(isRvp && !rvpCanStart()){
+    btn.disabled=true;
+    btn.textContent=!rvpBasis?'Checking Risk VP records\u2026':rvpBasis.kind==='clean'?'Nothing to verify at this site':'Confirm below to start \u2192';
+  } else if(isRvp && !rvpFullAudit && rvpBasis && rvpBasis.kind==='verify'){
+    const n=rvpBasis.data.priorFindings.length;
+    btn.disabled=false;
+    btn.textContent='Start Spot-Check \u2014 '+n+' finding'+(n===1?'':'s')+' to verify \u2192';
+  } else if(isRvp && !rvpFullAudit && siteWalkMode){
+    btn.disabled=false;
+    btn.textContent='Start Spot-Check (first look) \u2014 '+totReduced+' questions \u2192';
+  } else {
+    btn.disabled=false;
+    btn.textContent='Start Audit \u2014 '+tot+' questions'+modeLabel+' \u2192';
+  }
 }
 
 // ── START / BACK / NEW ──
 function startAudit(isResume){
+  if(userRole==='regional_vp' && !isResume){
+    if(!document.getElementById('locby').value.trim()){ alert('Please enter your name in Completed By first.'); return; }
+    if(!rvpCanStart()) return;
+  }
   if(userRole==='regional_vp' && spotCheckMode){
     startSimpleSpotCheck(isResume);
     return;
@@ -1416,6 +1454,7 @@ function startAudit(isResume){
       const id='sess_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
       currentSessionId=id;
       finalized=false;
+      firstLookBasis=siteWalkMode?((rvpBasis&&rvpBasis.kind==='unknown')?'unverified':'no-risk-vp-audit'):'';
       sessions.push({
         id, locId:selLoc.id, locName:selLoc.name, region:selLoc.region,
         quarter:document.getElementById('locqtr').value, completedBy:document.getElementById('locby').value,
@@ -1442,6 +1481,7 @@ function startAudit(isResume){
     '<span style="background:var(--status-info-text);color:#bfdbfe;padding:1px 7px;border-radius:4px;font-weight:700;font-size:11px;margin-right:5px">'+xH(selLoc.id)+'</span>'
     +(virtualMode?'<span style="background:#0e7490;color:#a5f3fc;padding:1px 7px;border-radius:4px;font-weight:700;font-size:11px;margin-right:5px">\ud83c\udfa5 VIRTUAL</span>':'')
     +(spotCheckMode?'<span style="background:#7e22ce;color:#f3e8ff;padding:1px 7px;border-radius:4px;font-weight:700;font-size:11px;margin-right:5px">\ud83d\udd0d SPOT-CHECK</span>':'')
+    +(siteWalkMode?'<span style="background:#0f766e;color:#ccfbf1;padding:1px 7px;border-radius:4px;font-weight:700;font-size:11px;margin-right:5px">\ud83d\udd0d FIRST LOOK</span>':'')
     +'<strong style="color:var(--border)">'+xH(selLoc.name)+'</strong>'
     +' <span style="color:var(--text-muted)">\u00b7 '+xH(selLoc.region)+' \u00b7 '+document.getElementById('locqtr').value+'</span>'
     +(selLoc.rvp?'<div style="margin-top:2px;font-size:11px;color:#93c5fd">Regional VP: <strong style="color:var(--status-info-bg)">'+xH(selLoc.rvp)+'</strong></div>':'');
@@ -1825,7 +1865,7 @@ let virtualMode=false; // when true, this audit is a remote/video-call visit —
 let spotCheckMode=false; // when true, this is a quick in-person spot-check visit — same reduced question set as Virtual, but tracked as its own category
 let continuityMode=false; // when true, this is a Regional VP follow-up check based on the Risk VP's own prior audit at this location
 let siteWalkMode=false; // when true, this is a Regional VP "Site Walk-Through" — same reduced question set as Virtual, but answered in person, for locations with no Risk VP audit on file yet to Spot-Check against
-let userRole='risk_vp'; // 'risk_vp' | 'regional_vp' — controls which modes/features are shown
+let userRole='regional_vp'; // 'risk_vp' | 'regional_vp' — a fresh device starts as Regional VP; Risk VP needs the PIN — controls which modes/features are shown
 const USER_ROLE_KEY='tsc_vp_audit_user_role_v1';
 let spotCheckResolutions={}; // per-session, Regional VP simple Spot-Check only: ref -> {resolved:true/false, note:''}
 let spotCheckFinalized=false; // hard-gates Send Results — must review every item first, can unlock to fix
@@ -1874,16 +1914,7 @@ function confirmRiskVpPin(){
 function setUserRole(role){
   userRole=role;
   try{ localStorage.setItem(USER_ROLE_KEY, role); }catch(err){}
-  // Spot-Check is now the clearly primary/default path for Regional VP — auto-select it
-  // on switching roles, but only if nothing's already chosen, so this never overrides a
-  // deliberate manual pick (e.g. someone using On-Site as the occasional fallback).
-  if(role==='regional_vp' && !spotCheckMode && !virtualMode && !continuityMode){
-    spotCheckMode=true;
-    const sct=document.getElementById('spotCheckModeToggle');
-    if(sct) sct.checked=true;
-    updateStartBtn();
-  }
-  applyRoleUI();
+  applyRoleUI(); // also re-runs the Risk VP check for the picked location, for a Regional VP
   renderMyAudits();
 }
 // ── HELP / AUDIT FLOW MODALS — content shown depends on which role is CURRENTLY
@@ -1935,9 +1966,11 @@ function applyRoleUI(){
   if(infoRow) infoRow.style.display=isRvp?'none':'';
   if(isRvp && virtualMode){ virtualMode=false; const vt=document.getElementById('virtualModeToggle'); if(vt) vt.checked=false; }
   const siteWalkLabel=document.getElementById('siteWalkModeLabel');
-  if(siteWalkLabel) siteWalkLabel.style.display=isRvp?'flex':'none';
+  if(siteWalkLabel) siteWalkLabel.style.display='none'; // first look is chosen for the Regional VP, never a toggle
   const siteWalkDesc=document.getElementById('siteWalkDescLabel');
-  if(siteWalkDesc) siteWalkDesc.style.display=isRvp?'':'none';
+  if(siteWalkDesc) siteWalkDesc.style.display='none';
+  const spotLbl=document.getElementById('spotCheckModeLabel'); if(spotLbl) spotLbl.style.display=isRvp?'none':'flex';
+  const spotDescEl=document.getElementById('spotCheckDescLabel'); if(spotDescEl) spotDescEl.style.display=isRvp?'none':'';
   if(!isRvp && siteWalkMode){ siteWalkMode=false; const swt=document.getElementById('siteWalkModeToggle'); if(swt) swt.checked=false; }
   updateSiteWalkPacketStatus();
   // The card also holds the Spot-Check toggle, which Regional VP genuinely needs — so the
@@ -1986,6 +2019,8 @@ function applyRoleUI(){
     if(ct) ct.checked=false;
   }
 
+  syncCompletedByForRole();
+  applyRvpBasis();
   filterLocs(); // refresh the location list to reflect the (possibly changed) base list
 }
 let continuityPacket=null; // imported continuity_packet.json — { generatedAt, locations: { unitId: {...} } }
@@ -2111,18 +2146,26 @@ function deriveContinuityData(rawData){
   };
 }
 async function fetchContinuityPacket(){
+  continuityStatus=continuityPacket?'ok':'pending';
+  let ok=false;
   try{
     const res=await fetch(LEADERSHIP_DASHBOARD_DATA_URL,{cache:'no-store'});
-    if(!res.ok) return;
-    const rawData=await res.json();
-    if(!rawData.submissions) return;
-    continuityPacket=deriveContinuityData(rawData);
-    try{ localStorage.setItem(CONTINUITY_PACKET_KEY, JSON.stringify(continuityPacket)); }catch(err){}
-    updateContinuityLabel();
-    if(selLoc) updateStartBtn();
-  }catch(err){
-    // Leadership Dashboard data not reachable — fine, this just means using whatever's cached locally (if anything)
-  }
+    if(res.ok){
+      const rawData=await res.json();
+      if(rawData.submissions){
+        continuityPacket=deriveContinuityData(rawData);
+        try{ localStorage.setItem(CONTINUITY_PACKET_KEY, JSON.stringify(continuityPacket)); }catch(err){}
+        ok=true;
+      }
+    }
+  }catch(err){ /* Leadership Dashboard data not reachable — fall back to whatever's cached locally (if anything) */ }
+  continuityStatus=(ok||continuityPacket)?'ok':'failed';
+  updateContinuityLabel();
+  updateSiteWalkPacketStatus();
+  if(selLoc) updateStartBtn();
+  // The pick may have happened before this finished — re-decide now that the data is here,
+  // instead of leaving a site with findings stuck on a first look.
+  applyRvpBasis();
 }
 function saveContinuityBaseline(val){
   continuityBaseline=Math.max(10,Math.min(100,parseInt(val,10)||50));
@@ -2172,7 +2215,9 @@ function updateSiteWalkPacketStatus(){
   if(userRole!=='regional_vp'){ el.style.display='none'; return; }
   el.style.display='block';
   if(!continuityPacket){
-    el.textContent='\u26a0\ufe0f No Risk VP findings data loaded yet \u2014 every location will default to Site Walk-Through until this loads. Check your connection and reload.';
+    el.textContent=continuityStatus==='failed'
+      ? '\u26a0\ufe0f Couldn\'t load the Risk VP findings data \u2014 check your connection, then tap Retry on the Spot-Check card.'
+      : '\u23f3 Loading Risk VP findings data\u2026';
     el.style.background='var(--status-warn-bg)'; el.style.color='var(--status-warn-text)';
     return;
   }
@@ -2292,13 +2337,170 @@ function updateVirtualCountLabel(){
   const el2=document.getElementById('virtualTotalLabel');
   if(el2) el2.textContent=QUESTIONS.length;
 }
+// ── REGIONAL VP: ONE "SPOT-CHECK", TWO BASES ─────────────────────────────────
+// Regional VPs only ever see "Spot-Check". Which kind they get is decided from the published
+// Risk VP data for the site they pick:
+//   verify  — the Risk VP audited it and left findings  → quick Resolved / Still Open list
+//   first   — no Risk VP audit on file yet               → short in-person "first look"
+//   clean   — the Risk VP audited it, nothing is open    → nothing to verify
+//   unknown — can't tell (data still loading / couldn't load) → never guess silently
+// Internally a first look is stored as siteWalkMode (sessions saved by older versions use that
+// flag), but nothing user-facing calls it that, and it never touches the Virtual question list.
+let rvpBasis=null;            // result of the last check for the picked location
+let rvpAutoSet=false;         // true while spotCheckMode/siteWalkMode came from the check (so a role switch can undo them)
+let rvpUnverifiedAck=false;   // Regional VP confirmed "the Risk VP hasn't been here" while the data was unavailable
+let rvpFullAudit=false;       // Regional VP chose the occasional full on-site audit instead
+let continuityStatus='pending'; // 'pending' | 'ok' | 'failed' — state of the published Risk VP findings
+let firstLookBasis='';        // saved with the session and written into the export
+
+// The first-look list is its own list — seeded from the Virtual list's built-in defaults, then
+// maintained separately so changes to one never silently change the other. Kept in a published
+// file (first_look_list.json next to dashboard_data.json) so every Regional VP's device uses
+// the same list; this built-in copy is what's used until/unless that file exists.
+const DEFAULT_FIRST_LOOK=["GS-01","GS-02","GS-03","GS-04","GS-05","GS-08","GS-09","GS-11","CS-01","CS-02","CS-05","CS-09","CS-12","CS-14","EP-01","EP-07","EP-09","TD-01","TD-02","TD-04","TD-05","TD-08","VH-01","VH-02","VH-04","VH-06","VH-15","VH-19","HK-04","HK-15","HK-16","HK-21","PA-01","PA-03","PA-10","PA-11","KS-01","KS-03","KS-05","KS-08","KS-18","KS-19","KS-20","EV-03","EV-04","EV-06","EV-07","EV-10","EV-23","GC-01","GC-02","GC-04","GC-06","GC-18"];
+const FIRST_LOOK_CACHE_KEY='tsc_vp_audit_first_look_list_v1';
+const FIRST_LOOK_LIST_URL='https://corne6309.github.io/TSC-Safety-Leadership-Dashboard/first_look_list.json';
+let firstLookRefs=new Set(DEFAULT_FIRST_LOOK);
+let firstLookSource='built-in';
+function validFirstLookRefs(list){
+  if(!Array.isArray(list)) return null;
+  const known=new Set(QUESTIONS.map(q=>q.ref));
+  const ok=list.filter(r=>typeof r==='string'&&known.has(r));
+  // A near-empty list (typo, bad edit) would leave Regional VPs with nothing to do — ignore it.
+  return ok.length>=10?new Set(ok):null;
+}
+async function loadFirstLookList(){
+  try{
+    const raw=localStorage.getItem(FIRST_LOOK_CACHE_KEY);
+    if(raw){const o=JSON.parse(raw);const s=validFirstLookRefs(o.refs);if(s){firstLookRefs=s;firstLookSource='published '+(o.updated||'');}}
+  }catch(err){}
+  try{
+    const res=await fetch(FIRST_LOOK_LIST_URL+'?t='+Date.now(),{cache:'no-store'});
+    if(res.status===404){
+      // The published list was removed — fall back to the built-in one rather than a stale copy.
+      try{localStorage.removeItem(FIRST_LOOK_CACHE_KEY);}catch(err){}
+      firstLookRefs=new Set(DEFAULT_FIRST_LOOK);firstLookSource='built-in';
+      if(selLoc) updateStartBtn();
+      return;
+    }
+    if(!res.ok) return;
+    const o=await res.json();
+    const s=validFirstLookRefs(o&&o.refs);
+    if(!s) return;
+    firstLookRefs=s;firstLookSource='published'+(o.updated?' '+o.updated:'');
+    try{localStorage.setItem(FIRST_LOOK_CACHE_KEY,JSON.stringify({refs:[...s],updated:o.updated||''}));}catch(err){}
+    if(selLoc) updateStartBtn();
+  }catch(err){ /* no published list reachable — whatever is cached / built in stands */ }
+}
+
+function rvpBasisFor(locId){
+  if(!continuityPacket) return {kind:'unknown',reason:continuityStatus==='failed'?'failed':'pending'};
+  const d=continuityDataForLocationById(locId);
+  if(!d) return {kind:'first'};
+  if(d.priorFindings&&d.priorFindings.length) return {kind:'verify',data:d};
+  return {kind:'clean',data:d};
+}
+function rvpExistingSession(){return selLoc?findSessionForLocation(selLoc.id,selLoc.name):null;}
+function syncModeCheckboxes(){
+  [['virtualModeToggle',virtualMode],['spotCheckModeToggle',spotCheckMode],['siteWalkModeToggle',siteWalkMode],['continuityModeToggle',continuityMode]].forEach(function(p){
+    const el=document.getElementById(p[0]);if(el) el.checked=!!p[1];
+  });
+}
+function applyRvpBasis(){
+  if(!selLoc){renderRvpBasisPanel();return;}
+  if(userRole!=='regional_vp'){
+    if(rvpAutoSet){spotCheckMode=false;siteWalkMode=false;rvpAutoSet=false;syncModeCheckboxes();}
+    rvpBasis=null;renderRvpBasisPanel();updateStartBtn();return;
+  }
+  // Resuming work already saved for this site: its mode comes from the saved session.
+  if(rvpExistingSession()){rvpBasis=null;renderRvpBasisPanel();updateStartBtn();return;}
+  const b=rvpBasisFor(selLoc.id);
+  rvpBasis=b;
+  if(rvpFullAudit){spotCheckMode=false;siteWalkMode=false;}
+  else{
+    spotCheckMode=(b.kind==='verify');
+    siteWalkMode=(b.kind==='first')||(b.kind==='unknown'&&rvpUnverifiedAck);
+  }
+  virtualMode=false;continuityMode=false;
+  rvpAutoSet=true;
+  syncModeCheckboxes();renderRvpBasisPanel();updateStartBtn();
+}
+function rvpCanStart(){
+  if(userRole!=='regional_vp') return true;
+  if(rvpExistingSession()) return true;
+  if(rvpFullAudit) return true;
+  if(!rvpBasis) return false;
+  if(rvpBasis.kind==='verify'||rvpBasis.kind==='first') return true;
+  if(rvpBasis.kind==='unknown') return rvpUnverifiedAck;
+  return false; // clean: nothing to verify at this site
+}
+function setRvpFullAudit(on){rvpFullAudit=!!on;applyRvpBasis();}
+function setRvpUnverifiedAck(on){rvpUnverifiedAck=!!on;applyRvpBasis();}
+function retryRvpData(){continuityStatus='pending';updateSiteWalkPacketStatus();renderRvpBasisPanel();fetchContinuityPacket();}
+
+function prettyVPDate(v){
+  if(v==null||v==='') return '';
+  const s=String(v).trim();
+  if(/^\d{5}(\.\d+)?$/.test(s)){const n=parseFloat(s);if(n>20000&&n<80000) return new Date(Date.UTC(1899,11,30)+Math.floor(n)*86400000).toISOString().slice(0,10);}
+  return s;
+}
+function rvpDataAgeNote(){
+  if(!continuityPacket||!continuityPacket.generatedAt) return '';
+  const age=(Date.now()-new Date(continuityPacket.generatedAt).getTime())/86400000;
+  return (isNaN(age)||age<=14)?'':'<div style="margin-top:6px;font-size:12px">\u26a0\ufe0f This data is '+Math.floor(age)+' days old \u2014 a recent Risk VP audit may not show yet.</div>';
+}
+function renderRvpBasisPanel(){
+  const el=document.getElementById('rvpBasisPanel');
+  if(!el) return;
+  if(userRole!=='regional_vp'||!selLoc){el.style.display='none';el.innerHTML='';return;}
+  el.style.display='';
+  const box=function(bg,fg,html){el.innerHTML='<div style="background:'+bg+';color:'+fg+';border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.5">'+html+'</div>';};
+  const asOf=(continuityPacket&&continuityPacket.generatedAtDisplay)?' <span style="font-size:11.5px;opacity:.8">(Risk VP data published '+xH(continuityPacket.generatedAtDisplay)+')</span>':'';
+  const fullLink='<div style="margin-top:6px;font-size:12px"><a href="#" onclick="setRvpFullAudit(true);return false" style="color:inherit;text-decoration:underline">Run a full on-site audit instead</a></div>';
+  if(rvpExistingSession()){
+    box('#f3e8ff','#6b21a8','\ud83d\udd0d <strong>Spot-Check</strong> \u2014 you already have one in progress for this site. Tap Resume below.');return;
+  }
+  if(rvpFullAudit){
+    box('#e0f2fe','#075985','\ud83d\udcCB <strong>Full on-site audit selected.</strong> <a href="#" onclick="setRvpFullAudit(false);return false" style="color:inherit;text-decoration:underline">Switch back to Spot-Check</a>');return;
+  }
+  const b=rvpBasis;
+  if(!b){box('#f1f5f9','#334155','\u23f3 Checking Risk VP records\u2026');return;}
+  if(b.kind==='verify'){
+    const d=b.data,n=d.priorFindings.length;
+    const when=prettyVPDate(d.lastAuditDate)||d.lastAuditQuarter;
+    box('#f3e8ff','#6b21a8','\ud83d\udd0d <strong>Spot-Check \u2014 verifying the Risk VP\'s findings.</strong><br>The Risk VP audited this site ('+xH(when)+'); '+n+' finding'+(n===1?'':'s')+' to confirm as Resolved or Still Open.'+asOf+rvpDataAgeNote()+fullLink);
+  } else if(b.kind==='first'){
+    const n=QUESTIONS.filter(function(q){return actSec.has(q.section)&&firstLookRefs.has(q.ref);}).length;
+    box('#ccfbf1','#115e59','\ud83d\udd0d <strong>Spot-Check \u2014 first look.</strong><br>The Risk VP hasn\'t audited this site yet, so you\'ll answer a short list ('+n+' questions for this site) in person.'+asOf+rvpDataAgeNote()+fullLink);
+  } else if(b.kind==='clean'){
+    box('#dcfce7','#166534','\u2705 <strong>Nothing to verify.</strong> The Risk VP audited this site ('+xH(b.data.lastAuditQuarter||'')+') and no findings are open.'+asOf+fullLink);
+  } else {
+    const why=b.reason==='failed'?'couldn\'t be loaded':'isn\'t loaded yet';
+    box('#fef3c7','#92400e','\u26a0\ufe0f <strong>Can\'t confirm whether the Risk VP has audited this site</strong> \u2014 the findings data '+why+'.'
+      +'<div style="margin-top:8px"><button class="btn btn-slate" style="padding:6px 12px;font-size:12px" onclick="retryRvpData()">\ud83d\udd04 Retry</button></div>'
+      +'<label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:12.5px;cursor:pointer"><input type="checkbox" style="margin-top:3px" '+(rvpUnverifiedAck?'checked ':'')+'onchange="setRvpUnverifiedAck(this.checked)"><span>I confirm the Risk VP has <strong>not</strong> audited this site \u2014 start a first look anyway (it will be flagged as unverified).</span></label>');
+  }
+}
+
+// Completed By follows the role: a Regional VP's own name (from the name picker), never the
+// Risk VP's. Anything the person has typed is left alone.
+let lastAutoCompletedBy='';
+function syncCompletedByForRole(){
+  const el=document.getElementById('locby');
+  if(!el) return;
+  const cur=el.value.trim();
+  const want=userRole==='regional_vp'?(activeRvpName||''):'Corn\u00e9 Wolmarans';
+  const known=RVP_NAMES.concat(['Corn\u00e9 Wolmarans']);
+  if(!cur||cur===lastAutoCompletedBy||known.indexOf(cur)>=0){el.value=want;lastAutoCompletedBy=want;}
+}
+
 function activeQs(){
   const bySec=QUESTIONS.filter(q=>actSec.has(q.section));
   if(continuityMode){
     const included=continuityIncludedRefs();
     return bySec.filter(q=>included.has(q.ref));
   }
-  return (virtualMode||spotCheckMode||siteWalkMode)?bySec.filter(q=>virtualIncludedRefs.has(q.ref)):bySec;
+  return (virtualMode||spotCheckMode||siteWalkMode)?bySec.filter(q=>(siteWalkMode?firstLookRefs:virtualIncludedRefs).has(q.ref)):bySec;
 }
 function csvEsc(v){ // CSV field escaping
   const s=String(v==null?'':v);
@@ -3082,7 +3284,7 @@ function buildWorkbookBlob(){
     continuityLabel='Baseline '+continuityBaseline+'% \u2014 following up on '+(cdata?cdata.lastAuditQuarter:'(no packet data for this location)')
       +(naItemsForLoc.length?'; N/A review: '+confirmedCount+' confirmed, '+flaggedCount+' flagged as changed, '+(naItemsForLoc.length-confirmedCount-flaggedCount)+' not yet reviewed':'');
   }
-  const s1=[['VP OF RISK & SAFETY — SAFETY AUDIT'],['Location ID:',uid,'Location:',loc,'Region:',region,'State:',state],['Quarter:',qtr,'Completed By:',by,'Location Manager:',mgr,'Date of Audit:',auditDate],['Regional VP:',rvpName,'Accompanied By:',accompany||'(not entered)'],['Audit Type:',virtualMode?'\ud83c\udfa5 Virtual (Video Call)':spotCheckMode?'\ud83d\udd0d Spot-Check (In-Person)':continuityMode?'\ud83d\udd17 Continuity Check (In-Person)':siteWalkMode?'\ud83d\udeb6 Site Walk-Through (In-Person)':'On-Site (In-Person)'],['Location Verification:',locCheckLabel],['Continuity Check Info:',continuityLabel],['Active Sections:',[...actSec].join(', ')],['Photo Evidence Policy:',photoPolicyLabel],['VP Narrative:',narrative||'(none entered)'],['Documentation to Review Separately:',docNotes||'(none entered)'],[],['#','Ref ID','Section','Audit Question','Criticality','Shift','Answer','Notes','N/A Reason','Photos'],...qs.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,q.shift,ans[q.ref]||'',notes[q.ref]||'',nar[q.ref]||''])];
+  const s1=[['VP OF RISK & SAFETY — SAFETY AUDIT'],['Location ID:',uid,'Location:',loc,'Region:',region,'State:',state],['Quarter:',qtr,'Completed By:',by,'Location Manager:',mgr,'Date of Audit:',auditDate,'Completed As:',(((sessions.find(s=>s.id===currentSessionId)||{}).createdByRole||userRole)==='regional_vp'?'Regional VP':'Risk VP'),'Basis:',(siteWalkMode?(firstLookBasis==='unverified'?'First look \u2014 Risk VP status unverified (data unavailable)':'First look \u2014 no Risk VP audit on file'):'')],['Regional VP:',rvpName,'Accompanied By:',accompany||'(not entered)'],['Audit Type:',virtualMode?'\ud83c\udfa5 Virtual (Video Call)':spotCheckMode?'\ud83d\udd0d Spot-Check (In-Person)':continuityMode?'\ud83d\udd17 Continuity Check (In-Person)':siteWalkMode?'\ud83d\udd0d Spot-Check \u00b7 First Look (In-Person)':'On-Site (In-Person)'],['Location Verification:',locCheckLabel],['Continuity Check Info:',continuityLabel],['Active Sections:',[...actSec].join(', ')],['Photo Evidence Policy:',photoPolicyLabel],['VP Narrative:',narrative||'(none entered)'],['Documentation to Review Separately:',docNotes||'(none entered)'],[],['#','Ref ID','Section','Audit Question','Criticality','Shift','Answer','Notes','N/A Reason','Photos'],...qs.map(q=>[q.num,q.ref,q.section,q.question,q.criticality,q.shift,ans[q.ref]||'',notes[q.ref]||'',nar[q.ref]||''])];
 
   // Mark rows that will contain photos so shXml gives them extra height
   const photoAnchors=[]; // {fromCol,fromRow,toCol,toRow,rId,picId,name}
@@ -3149,7 +3351,7 @@ function buildWorkbookBlob(){
   const now=new Date();
   const pad=n=>String(n).padStart(2,'0');
   const exportStamp=pad(now.getMonth()+1)+pad(now.getDate())+'-'+pad(now.getHours())+pad(now.getMinutes());
-  const filename='TSC_VP_Risk_Audit_'+(uid||'Export').replace(/[^a-zA-Z0-9]/g,'_')+(locNameForFile?'_'+locNameForFile:'')+(virtualMode?'_VIRTUAL':spotCheckMode?'_SPOTCHECK':continuityMode?'_CONTINUITY':'')+'_'+qtr.replace(/\s/g,'_')+'_'+exportStamp+'.xlsx';
+  const filename='TSC_VP_Risk_Audit_'+(uid||'Export').replace(/[^a-zA-Z0-9]/g,'_')+(locNameForFile?'_'+locNameForFile:'')+(virtualMode?'_VIRTUAL':spotCheckMode?'_SPOTCHECK':continuityMode?'_CONTINUITY':siteWalkMode?'_FIRSTLOOK':'')+'_'+qtr.replace(/\s/g,'_')+'_'+exportStamp+'.xlsx';
   return {blob,filename};
 }
 
@@ -3285,7 +3487,7 @@ function buildNotifyMessage(){
 
   const subject=(emailMode==='actionlist'
     ? 'VP Risk Audit \u2014 Action List Update \u2014 '+locName+' ('+qtr+')'
-    : 'VP of Risk & Safety Audit \u2014 '+locName+' ('+qtr+')'+(virtualMode?' [VIRTUAL]':spotCheckMode?' [SPOT-CHECK]':continuityMode?' [CONTINUITY CHECK]':''));
+    : 'VP of Risk & Safety Audit \u2014 '+locName+' ('+qtr+')'+(virtualMode?' [VIRTUAL]':spotCheckMode?' [SPOT-CHECK]':continuityMode?' [CONTINUITY CHECK]':siteWalkMode?' [SPOT-CHECK \u00b7 FIRST LOOK]':''));
   const body=(emailMode==='actionlist'
     ? 'Action List status update for a previously submitted VP Risk Audit.\n\n'+
       'Location: '+locName+'\n'+
@@ -3295,7 +3497,7 @@ function buildNotifyMessage(){
       actionList+
       '\n\n\u2014\u2014\u2014\nThe completed Excel workbook has been downloaded to this device \u2014 please attach it to this email before sending. This replaces the Action List status from the prior submission; the original audit answers and score are unchanged.'
     : 'VP Risk Audit completed for '+locName+'.\n\n'+
-      (virtualMode?'Audit Type: \ud83c\udfa5 Virtual (Video Call)\n':spotCheckMode?'Audit Type: \ud83d\udd0d Spot-Check (In-Person, quick visit)\n':continuityMode?'Audit Type: \ud83d\udd17 Continuity Check (In-Person, baseline '+continuityBaseline+'%)\n':siteWalkMode?'Audit Type: \ud83d\udeb6 Site Walk-Through (In-Person, quick visit)\n':'')+
+      (virtualMode?'Audit Type: \ud83c\udfa5 Virtual (Video Call)\n':spotCheckMode?'Audit Type: \ud83d\udd0d Spot-Check (In-Person, quick visit)\n':continuityMode?'Audit Type: \ud83d\udd17 Continuity Check (In-Person, baseline '+continuityBaseline+'%)\n':siteWalkMode?'Audit Type: \ud83d\udd0d Spot-Check \u00b7 First Look (In-Person)\n':'')+
       'Date of Audit: '+auditDate+'\n'+
       'Quarter: '+qtr+'\n'+
       'Completed By: '+by+'\n'+
@@ -3381,7 +3583,30 @@ function updateSendActionListBtnAppearance(){
 // init
 checkStorageHealthOnLoad();
 loadPersistedSessions();
+// The Quarter box used to default to a hard-coded quarter, so a Regional VP's first Q4 visit would be
+// exported as Q3 unless they noticed and changed it. It now follows the calendar: options run from
+// Q1 2026 through the next quarter, and a new audit starts on the current one. Audits already
+// saved keep the quarter they were started under.
+function currentQuarterLabel(){const d=new Date();return 'Q'+(Math.floor(d.getMonth()/3)+1)+' '+d.getFullYear();}
+function ensureQuarterOptionVP(q){
+  const s=document.getElementById('locqtr');
+  if(!s||!q) return;
+  if(![...s.options].some(function(o){return o.value===q||o.text===q;})){const o=document.createElement('option');o.text=q;o.value=q;s.appendChild(o);}
+}
+function buildQuarterOptions(){
+  const s=document.getElementById('locqtr');
+  if(!s) return;
+  const cur=currentQuarterLabel(), m=/Q(\d) (\d{4})/.exec(cur);
+  const curIdx=(+m[2])*4+(+m[1]);
+  s.innerHTML='';
+  for(let y=2026;y<=+m[2]+1;y++){for(let q=1;q<=4;q++){
+    if(y*4+q<=curIdx+1){const o=document.createElement('option');o.text='Q'+q+' '+y;o.value=o.text;s.appendChild(o);}
+  }}
+  s.value=cur;
+}
+buildQuarterOptions();
 loadVirtualSettings();
+loadFirstLookList();
 loadContinuitySettings();
 loadUserRole();
 updateNetStatusBadge();
